@@ -287,17 +287,18 @@ struct FloatingPetView: View {
     @ObservedObject private var pmdStore = PMDPetStore.shared
 
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 10) {
             if pet.showChat && !pet.chatLine.isEmpty && progress.hasChosenStarter {
                 ChatBubble(
                     text: pet.chatLine,
                     portrait: portrait,
-                    maxWidth: min(270, pet.windowSize.width - 44)
+                    maxWidth: min(270, pet.windowSize.width - 56)
                 )
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
             PetView(size: pet.petPoint)
         }
+        .padding(.top, 6)
         .frame(width: pet.windowSize.width, height: pet.windowSize.height, alignment: .bottom)
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: pet.chatLine)
         .animation(.easeInOut, value: pet.showChat)

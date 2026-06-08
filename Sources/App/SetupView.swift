@@ -6,15 +6,10 @@ import KabigonCore
 struct SetupView: View {
     @ObservedObject private var model = SettingsModel.shared
     @ObservedObject private var pet = PetController.shared
-    @ObservedObject private var imagePets = ImagePetStore.shared
     var onClose: () -> Void
 
     enum Tab { case general, pet }
     @State private var tab: Tab = .general
-
-    private var selectedPack: ImagePetPack? {
-        pet.selectedPetID.flatMap { imagePets.pack(id: $0) }
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,7 +20,7 @@ struct SetupView: View {
                 case .general:
                     GeneralTab(model: model, pet: pet)
                 case .pet:
-                    PetTab(pet: pet, imagePets: imagePets, model: model, selectedPack: selectedPack)
+                    PetTab(pet: pet)
                 }
             }
         }
@@ -275,22 +270,47 @@ private struct GeneralTab: View {
 
 private struct PetTab: View {
     @ObservedObject var pet: PetController
-    @ObservedObject var imagePets: ImagePetStore
-    @ObservedObject var model: SettingsModel
     @ObservedObject private var progress = ProgressStore.shared
     @ObservedObject private var pokedex = PokedexStore.shared
-    let selectedPack: ImagePetPack?
-    @State private var browsing = false
-    @State private var petQuery = ""
+    @ObservedObject private var pmdStore = PMDPetStore.shared
 
-    private var filteredPacks: [ImagePetPack] {
-        guard !petQuery.isEmpty else { return imagePets.packs }
-        let q = petQuery.lowercased()
-        return imagePets.packs.filter { $0.displayName.lowercased().contains(q) }
+    private var currentDex: Int { progress.displayDex }
+    private var currentName: String {
+        Gen1Pokedex.name(for: currentDex) ?? "Pokémon #\(currentDex)"
     }
 
     var body: some View {
         Form {
+            Section("Current Pokémon") {
+                HStack(spacing: 14) {
+                    currentPokemonPreview
+                        .frame(width: 84, height: 84)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(.quaternary))
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(currentName)
+                            .font(.title3.weight(.semibold))
+
+                        HStack(spacing: 6) {
+                            Text(String(format: "#%03d", currentDex))
+                            Text("Lv \(progress.level(for: currentDex))")
+                        }
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+
+                        Text(PokemonDescriptions.text(for: currentDex))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer()
+                }
+                .task(id: currentDex) {
+                    await pmdStore.ensureLoaded(dex: currentDex)
+                }
+            }
+
             Section("Your Pokémon") {
                 if pokedex.caughtCount == 0 {
                     Text("No Pokémon yet — choose a starter to get started!")
@@ -302,49 +322,6 @@ private struct PetTab: View {
                         progress.choosePokemon(dex: dex)
                     }
                     .padding(.vertical, 4)
-                }
-            }
-
-            Section {
-                HStack(spacing: 14) {
-                    petPreview
-                        .frame(width: 84, height: 84)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(.quaternary))
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(selectedPack?.displayName ?? "No pet selected")
-                            .font(.title3.weight(.semibold))
-                        if let desc = selectedPack?.description {
-                            Text(desc).font(.callout).foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    Spacer()
-                }
-            }
-
-            Section("Choose pet") {
-                if imagePets.packs.isEmpty {
-                    Text("No pets yet. Tap Browse to add one.").foregroundStyle(.secondary)
-                } else {
-                    if imagePets.packs.count > 4 {
-                        NativeSearchField(text: $petQuery, placeholder: "Search your pets")
-                    }
-                    PetPager(packs: filteredPacks, selectedID: pet.selectedPetID,
-                             onSelect: { pet.selectedPetID = $0 },
-                             onDelete: { pack in
-                                 let wasSelected = pet.selectedPetID == pack.id
-                                 imagePets.delete(pack)
-                                 if wasSelected { pet.selectedPetID = imagePets.packs.first?.id }
-                             })
-                }
-                Button { browsing = true } label: {
-                    Label("Browse pets…", systemImage: "square.grid.2x2")
-                }
-            }
-
-            if let pack = selectedPack {
-                Section("Animations") {
-                    AnimationPicker(pack: pack)
                 }
             }
 
@@ -361,16 +338,50 @@ private struct PetTab: View {
             }
         }
         .formStyle(.grouped)
-        .sheet(isPresented: $browsing) {
-            BrowsePetsView(onClose: { browsing = false })
-        }
     }
 
-    @ViewBuilder private var petPreview: some View {
-        if let pack = selectedPack {
-            ImageSpriteView(frames: pack.clip(0), mood: .idle, size: 78)
+    @ViewBuilder private var currentPokemonPreview: some View {
+        if let species = pmdStore.loaded(dex: currentDex) {
+            PMDSpriteView(species: species, mood: .idle, size: 78)
+        } else if pmdStore.isLoading(dex: currentDex) {
+            ProgressView().controlSize(.small)
+        } else if pmdStore.didFail(dex: currentDex) {
+            Button(action: { pmdStore.retry(dex: currentDex) }) {
+                Image(systemName: "arrow.clockwise.circle.fill")
+                    .font(.system(size: 28))
+            }
+            .buttonStyle(.plain)
+            .help("Retry asset download")
         } else {
             Image(systemName: "pawprint.fill").font(.system(size: 40)).foregroundStyle(.secondary)
+        }
+    }
+}
+
+private enum PokemonDescriptions {
+    static func text(for dex: Int) -> String {
+        switch dex {
+        case 1:
+            return "A strange seed was planted on its back at birth. The plant grows by soaking up sunlight."
+        case 2:
+            return "The bud on its back grows larger as it absorbs energy. When the bud is ready, it gives off a sweet aroma."
+        case 3:
+            return "The flower on its back blooms in bright sunlight, drawing energy into its powerful body."
+        case 4:
+            return "The flame on its tail shows its life force and mood. It burns brighter when Charmander is fired up."
+        case 5:
+            return "A hot-headed Pokémon with sharp claws and a burning tail. It is quick to battle when excited."
+        case 6:
+            return "It flies through the sky on broad wings and breathes intense fire when facing strong opponents."
+        case 7:
+            return "Its shell protects it in battle and helps it move through water with steady, controlled bursts."
+        case 8:
+            return "Its fluffy ears and tail are symbols of age and skill. It uses its shell and balance to fight well."
+        case 9:
+            return "The water cannons on its shell fire powerful blasts with enough force to overwhelm tough foes."
+        default:
+            let name = Gen1Pokedex.name(for: dex) ?? "This Pokémon"
+            return "\(name) is registered in your Kanto Pokédex and is currently available as your on-screen companion. It keeps its own level and XP when you switch Pokémon."
         }
     }
 }

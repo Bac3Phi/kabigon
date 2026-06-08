@@ -40,7 +40,7 @@ final class PetController: ObservableObject {
 
     /// Floating window size for a sprite point size (room for the bubble above).
     static func windowSize(forPoint point: Double) -> CGSize {
-        CGSize(width: point + 110, height: point + 64)
+        CGSize(width: max(point + 160, 300), height: point + 112)
     }
     var windowSize: CGSize { Self.windowSize(forPoint: petPoint) }
 
@@ -216,8 +216,11 @@ final class PetController: ObservableObject {
 
     private func refreshChat() {
         guard petReactionTimer == nil else { return }
-        let pool = ChatSettings.shared.lines(for: mood)
-        guard showChat, mood != .idle, !pool.isEmpty else {
+        var pool = ChatSettings.shared.lines(for: mood)
+        if ChatSettings.shared.source == .system {
+            pool += PokemonDialogue.lines(for: ProgressStore.shared.displayDex, mood: mood)
+        }
+        guard showChat, !pool.isEmpty else {
             chatLine = ""
             StatusBarController.shared.refreshTitle()
             return
@@ -230,6 +233,10 @@ final class PetController: ObservableObject {
 /// Built-in (system) chat lines per mood.
 enum PetChat {
     static let lines: [PetMood: [String]] = [
+        .idle: [
+            "I'm right here.", "Keeping watch.", "Ready when you are.",
+            "Let's pick a task.", "I'll stay close.",
+        ],
         .working: [
             "Thinking…", "Working on it…", "On it!", "Crunching code…",
             "Hmm, let me see…", "Cooking something up…", "Deep in thought…",
@@ -247,4 +254,118 @@ enum PetChat {
             "🎉 Woohoo!", "We did it!", "Victory!", "Yesss!", "High five! 🙌", "Champion!",
         ],
     ]
+}
+
+enum PokemonDialogue {
+    static func lines(for dex: Int, mood: PetMood) -> [String] {
+        let name = Gen1Pokedex.name(for: dex) ?? "buddy"
+        let species = speciesLines(for: dex)
+        switch mood {
+        case .idle:
+            return species.idle + [
+                "\(name) is watching your workspace.",
+                "\(name) looks ready to help.",
+            ]
+        case .working:
+            return species.working + [
+                "\(name) is focusing with you.",
+                "\(name) is following the thread.",
+            ]
+        case .waiting:
+            return [
+                "\(name) is waiting for your call.",
+                "\(name) tilts its head.",
+            ]
+        case .done:
+            return species.done + [
+                "\(name) looks proud.",
+                "\(name) gives a satisfied nod.",
+            ]
+        case .celebrate:
+            return species.celebrate + [
+                "\(name) is celebrating!",
+                "\(name) bounces happily.",
+            ]
+        }
+    }
+
+    private static func speciesLines(for dex: Int) -> (
+        idle: [String],
+        working: [String],
+        done: [String],
+        celebrate: [String]
+    ) {
+        switch dex {
+        case 1:
+            return (
+                ["Bulbasaur soaks up a little sunlight.", "Bulbasaur gives a calm nod."],
+                ["Bulbasaur steadies the plan.", "Bulbasaur keeps the seed of an idea safe."],
+                ["Bulbasaur relaxes its vines.", "Bulbasaur looks pleased with the result."],
+                ["Bulbasaur's bulb wiggles happily.", "Bulbasaur hops in a tiny circle."]
+            )
+        case 2:
+            return (
+                ["Ivysaur's bud gives off a faint sweet scent.", "Ivysaur watches patiently."],
+                ["Ivysaur digs in and focuses.", "Ivysaur braces for the next step."],
+                ["Ivysaur gives a confident huff.", "Ivysaur lowers its guard."],
+                ["Ivysaur's bud sways with excitement.", "Ivysaur celebrates with a proud stomp."]
+            )
+        case 3:
+            return (
+                ["Venusaur rests under its broad flower.", "Venusaur breathes slowly."],
+                ["Venusaur anchors the team.", "Venusaur studies the problem carefully."],
+                ["Venusaur lets out a deep, happy rumble.", "Venusaur looks satisfied."],
+                ["Venusaur's flower shakes with joy.", "Venusaur celebrates with a gentle roar."]
+            )
+        case 4:
+            return (
+                ["Charmander's tail flame flickers warmly.", "Charmander looks eager."],
+                ["Charmander fires up for the task.", "Charmander scratches out a plan."],
+                ["Charmander beams at the finished work.", "Charmander's flame burns bright."],
+                ["Charmander cheers with a bright flame.", "Charmander does a small victory hop."]
+            )
+        case 5:
+            return (
+                ["Charmeleon taps one claw impatiently.", "Charmeleon keeps its flame steady."],
+                ["Charmeleon charges straight at the problem.", "Charmeleon narrows its eyes and focuses."],
+                ["Charmeleon flashes a sharp grin.", "Charmeleon looks fired up by the result."],
+                ["Charmeleon celebrates with a quick flourish.", "Charmeleon's tail flares proudly."]
+            )
+        case 6:
+            return (
+                ["Charizard folds its wings and watches.", "Charizard's tail burns steadily."],
+                ["Charizard scans the path ahead.", "Charizard pushes through the hard part."],
+                ["Charizard gives a proud nod.", "Charizard looks ready for the next challenge."],
+                ["Charizard lifts its wings in triumph.", "Charizard lets out a victorious roar."]
+            )
+        case 7:
+            return (
+                ["Squirtle peeks out from its shell.", "Squirtle gives a tiny wave."],
+                ["Squirtle keeps things flowing.", "Squirtle studies the next move."],
+                ["Squirtle smiles at the clean finish.", "Squirtle looks pleased."],
+                ["Squirtle spins happily.", "Squirtle celebrates with a little splash."]
+            )
+        case 8:
+            return (
+                ["Wartortle's ears twitch.", "Wartortle keeps a careful watch."],
+                ["Wartortle balances the details.", "Wartortle stays steady under pressure."],
+                ["Wartortle gives a practiced nod.", "Wartortle looks quietly proud."],
+                ["Wartortle's tail swishes happily.", "Wartortle celebrates with a neat spin."]
+            )
+        case 9:
+            return (
+                ["Blastoise stands guard.", "Blastoise rests with calm confidence."],
+                ["Blastoise lines up the next shot.", "Blastoise powers through the task."],
+                ["Blastoise lowers its cannons with a smile.", "Blastoise looks satisfied."],
+                ["Blastoise celebrates with a heavy stomp.", "Blastoise gives a triumphant grin."]
+            )
+        default:
+            return (
+                ["\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") stays close.", "\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") watches your work."],
+                ["\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") focuses with you.", "\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") keeps pace."],
+                ["\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") looks pleased.", "\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") relaxes."],
+                ["\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") celebrates with you.", "\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") looks thrilled."]
+            )
+        }
+    }
 }
