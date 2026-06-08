@@ -40,7 +40,7 @@ final class SettingsModel: ObservableObject {
             }
         }
         installedKinds = set
-        refreshNotificationState()
+        Task { await refreshNotificationState() }
     }
 
     func isInstalled(_ kind: AgentKind) -> Bool {
@@ -82,8 +82,10 @@ final class SettingsModel: ObservableObject {
 
     func enableNotifications() {
         guard NotificationManager.shared.isAvailable else { return }
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in
-            Task { @MainActor in self.refreshNotificationState() }
+        Task {
+            _ = try? await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .sound])
+            await refreshNotificationState()
         }
     }
 
@@ -94,23 +96,19 @@ final class SettingsModel: ObservableObject {
         }
     }
 
-    private func refreshNotificationState() {
+    private func refreshNotificationState() async {
         guard NotificationManager.shared.isAvailable else {
             notificationState = .unavailable
             return
         }
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            let status = settings.authorizationStatus
-            Task { @MainActor in
-                switch status {
-                case .authorized, .provisional, .ephemeral:
-                    self.notificationState = .enabled
-                case .denied:
-                    self.notificationState = .denied
-                default:
-                    self.notificationState = .notDetermined
-                }
-            }
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        switch settings.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            notificationState = .enabled
+        case .denied:
+            notificationState = .denied
+        default:
+            notificationState = .notDetermined
         }
     }
 }
