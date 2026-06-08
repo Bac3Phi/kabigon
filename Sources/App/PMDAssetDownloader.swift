@@ -13,7 +13,7 @@ enum PMDAssetDownloader {
         "Joyous", "Inspired", "Surprised", "Crying", "Pain", "Dizzy",
     ]
 
-    /// Root of the runtime asset cache (`~/.kabigon/pmd-cache`).
+    /// Root of the runtime asset cache in Application Support.
     static var cacheRoot: URL {
         URL(fileURLWithPath: KabigonPaths.baseDir).appendingPathComponent("pmd-cache")
     }
@@ -30,13 +30,16 @@ enum PMDAssetDownloader {
 
     /// Fetches, slices, and writes a species. Returns true on success. Safe to
     /// call off the main actor: it only touches the network and file system.
-    static func download(dex: Int) async -> Bool {
-        if isCached(dex: dex) { return true }
+    static func download(dex: Int, force: Bool = false) async -> Bool {
+        if isCached(dex: dex), !force { return true }
         let slug = String(format: "%04d", dex)
         let dir = cacheDir(dex: dex)
         let animDir = dir.appendingPathComponent("anim")
         let portraitDir = dir.appendingPathComponent("portrait")
         let fm = FileManager.default
+        if force {
+            try? fm.removeItem(at: dir)
+        }
         try? fm.createDirectory(at: animDir, withIntermediateDirectories: true)
         try? fm.createDirectory(at: portraitDir, withIntermediateDirectories: true)
 

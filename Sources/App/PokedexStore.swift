@@ -3,7 +3,7 @@ import KabigonCore
 
 /// Owns the player's Pokédex: which Gen-1 species have been caught, each one's
 /// level, and the NEW flag for freshly discovered species. Persists to
-/// `~/.kabigon/pokedex.json` so collection progress survives across launches.
+/// Kabigon's Application Support directory so collection progress survives across launches.
 @MainActor
 final class PokedexStore: ObservableObject {
     static let shared = PokedexStore()

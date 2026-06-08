@@ -1,8 +1,16 @@
+import AppKit
 import SwiftUI
 
 /// A small speech bubble with an upward tail, dropped from the menu bar icon.
 struct MenuBarChatBubble: View {
     let text: String
+    var maxWidth: CGFloat = 320
+
+    private let font = NSFont.systemFont(ofSize: 12, weight: .medium)
+
+    private var textWidth: CGFloat {
+        min(maxWidth, max(1, ceil((text as NSString).size(withAttributes: [.font: font]).width)))
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -11,7 +19,9 @@ struct MenuBarChatBubble: View {
                 .frame(width: 14, height: 7)
             Text(text)
                 .font(.system(size: 12, weight: .medium))
-                .lineLimit(1)
+                .multilineTextAlignment(.leading)
+                .frame(width: textWidth, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 7)
                 .background(.regularMaterial, in: Capsule())

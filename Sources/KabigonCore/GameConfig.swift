@@ -1,8 +1,8 @@
 import Foundation
 
 /// Tunable gameplay numbers (XP rewards, leveling curve, evolution thresholds).
-/// Defaults ship in code; power users can override any field with a JSON file at
-/// `~/.kabigon/gameconfig.json`. This is intentionally not surfaced in the UI.
+/// Defaults ship in code; power users can override any field with a JSON file in
+/// Kabigon's Application Support directory. This is intentionally not surfaced in the UI.
 public struct GameConfig: Codable, Sendable, Equatable {
     /// XP granted each time an agent finishes a turn (chatting with it).
     public var xpPerDone: Int

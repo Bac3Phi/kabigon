@@ -23,7 +23,8 @@ private struct Lenient<T: Decodable>: Decodable {
     }
 }
 
-/// Loads the online pet library and downloads packs into `~/.kabigon/pets/`.
+/// Loads the online pet library and downloads packs into Kabigon's Application
+/// Support directory.
 @MainActor
 final class PetBrowser: ObservableObject {
     @Published var pets: [RemotePet] = []
@@ -35,6 +36,7 @@ final class PetBrowser: ObservableObject {
     @Published var installed: Set<String> = []
     /// A transient per-download failure, shown as a banner without hiding the list.
     @Published var downloadError: String?
+    @Published var failedDownload: RemotePet?
 
     static let categories: [(label: String, value: String)] = [
         ("All", "all"), ("Characters", "character"), ("Creatures", "creature"), ("Objects", "object"),
@@ -83,6 +85,7 @@ final class PetBrowser: ObservableObject {
     func download(_ pet: RemotePet) {
         guard !downloading.contains(pet.slug) else { return }
         downloadError = nil
+        failedDownload = nil
         downloading.insert(pet.slug)
         Task {
             await performDownload(pet)
@@ -92,16 +95,22 @@ final class PetBrowser: ObservableObject {
 
     private func performDownload(_ pet: RemotePet) async {
         guard let petJsonURL = URL(string: pet.petJsonUrl),
-              let sheetURL = URL(string: pet.spritesheetUrl) else { return }
+              let sheetURL = URL(string: pet.spritesheetUrl) else {
+            downloadError = "Couldn't download \(pet.name). The asset link is invalid."
+            failedDownload = pet
+            return
+        }
         do {
             let id = try await PetInstaller.download(slug: pet.slug, petJsonURL: petJsonURL, spritesheetURL: sheetURL)
             ImagePetStore.shared.reload()
             installed.insert(pet.slug)
             PetController.shared.selectedPetID = id
             downloadError = nil
+            failedDownload = nil
         } catch {
             // A single failed download must not blank the whole gallery.
             downloadError = PetInstaller.message(for: error, pet: pet.name)
+            failedDownload = pet
         }
     }
 }

@@ -31,6 +31,10 @@ struct BrowsePetsView: View {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                     Text(de).font(.caption).foregroundStyle(.secondary)
                     Spacer()
+                    if let failed = browser.failedDownload {
+                        Button("Retry") { browser.download(failed) }
+                            .font(.caption)
+                    }
                     Button { browser.downloadError = nil } label: {
                         Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
                     }.buttonStyle(.plain)

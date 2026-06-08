@@ -3,13 +3,14 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   release:
-    name: Build & publish DMG
+    name: Build & publish release assets
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -34,10 +35,22 @@ jobs:
           AC_KEY_ID: ${{ secrets.AC_KEY_ID }}
           AC_ISSUER_ID: ${{ secrets.AC_ISSUER_ID }}
 
+      - name: Create ZIP release asset
+        run: |
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' scripts/AppInfo.plist)"
+          ditto -c -k --keepParent build/Kabigon.app "build/Kabigon-$VERSION.zip"
+          shasum -a 256 "build/Kabigon-$VERSION.zip"
+
       - name: Publish to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --title "Kabigon $GITHUB_REF_NAME" --generate-notes
-          gh release upload "$GITHUB_REF_NAME" build/*.dmg --clobber
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' scripts/AppInfo.plist)"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            TAG="$GITHUB_REF_NAME"
+          else
+            TAG="v$VERSION"
+          fi
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --title "Kabigon $TAG" --generate-notes
+          gh release upload "$TAG" build/*.dmg build/*.zip --clobber

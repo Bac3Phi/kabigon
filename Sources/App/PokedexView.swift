@@ -26,8 +26,13 @@ struct PokedexView: View {
                         let entry = pokedex.entry(dex)
                         PokedexCell(dex: dex, entry: entry,
                                     loaded: pmdStore.loaded(dex: dex),
-                                    showNew: newlySeen.contains(dex))
-                            .onAppear { if entry != nil { pmdStore.preload(dex) } }
+                                    showNew: newlySeen.contains(dex),
+                                    isLoading: pmdStore.isLoading(dex: dex),
+                                    didFail: pmdStore.didFail(dex: dex),
+                                    onRetry: { pmdStore.retry(dex: dex) })
+                            .task(id: dex) {
+                                if entry != nil { await pmdStore.ensureLoaded(dex: dex) }
+                            }
                     }
                 }
                 .padding(14)
@@ -65,6 +70,9 @@ private struct PokedexCell: View {
     let entry: PokedexEntry?
     let loaded: PMDLoadedSpecies?
     let showNew: Bool
+    let isLoading: Bool
+    let didFail: Bool
+    let onRetry: () -> Void
 
     var body: some View {
         VStack(spacing: 4) {
@@ -72,6 +80,15 @@ private struct PokedexCell: View {
                 if entry != nil, let image = idleFrame {
                     Image(nsImage: image)
                         .resizable().interpolation(.none).scaledToFit()
+                } else if entry != nil, isLoading {
+                    ProgressView().controlSize(.small)
+                } else if entry != nil, didFail {
+                    Button(action: onRetry) {
+                        Image(systemName: "arrow.clockwise.circle.fill")
+                            .font(.system(size: 18))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Retry asset download")
                 } else if entry != nil {
                     Image(systemName: "hourglass")
                         .font(.system(size: 18)).foregroundStyle(.white.opacity(0.4))

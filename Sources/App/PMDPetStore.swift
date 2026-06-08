@@ -30,6 +30,8 @@ final class PMDPetStore: ObservableObject {
     static let shared = PMDPetStore()
 
     @Published private(set) var cache: [Int: PMDLoadedSpecies] = [:]
+    @Published private(set) var loading: Set<Int> = []
+    @Published private(set) var failed: Set<Int> = []
 
     private struct AnimMeta: Decodable { let frameCount: Int; let durations: [Int] }
     private struct SpeciesMeta: Decodable {
@@ -53,15 +55,37 @@ final class PMDPetStore: ObservableObject {
         cache[dex] != nil || metaDir(dex: dex) != nil
     }
 
+    func isLoading(dex: Int) -> Bool { loading.contains(dex) }
+    func didFail(dex: Int) -> Bool { failed.contains(dex) }
+
     /// Loads a species, downloading its assets first if they are not on disk.
     /// Use this for freshly encountered Pokémon outside the bundled set.
-    func ensureLoaded(dex: Int) async {
+    func ensureLoaded(dex: Int, forceDownload: Bool = false) async {
         if cache[dex] != nil { return }
-        preload(dex)
-        if cache[dex] != nil { return }
-        let ok = await PMDAssetDownloader.download(dex: dex)
-        guard ok, let species = load(dex: dex) else { return }
+        if !forceDownload {
+            preload(dex)
+            if cache[dex] != nil {
+                failed.remove(dex)
+                return
+            }
+        }
+        guard !loading.contains(dex) else { return }
+        loading.insert(dex)
+        defer { loading.remove(dex) }
+
+        let ok = await PMDAssetDownloader.download(dex: dex, force: forceDownload)
+        guard ok, let species = load(dex: dex) else {
+            failed.insert(dex)
+            return
+        }
         cache[dex] = species
+        failed.remove(dex)
+    }
+
+    func retry(dex: Int) {
+        cache[dex] = nil
+        failed.remove(dex)
+        Task { await ensureLoaded(dex: dex, forceDownload: true) }
     }
 
     private var bundleRootURL: URL? {

@@ -18,15 +18,36 @@ public enum EventCoding {
 
 /// Default on-disk locations used by both the daemon and the CLI helper.
 public enum KabigonPaths {
-    public static var baseDir: String { NSHomeDirectory() + "/.kabigon" }
+    public static var baseDir: String {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+        return (appSupport ?? URL(fileURLWithPath: NSHomeDirectory() + "/Library/Application Support"))
+            .appendingPathComponent("Kabigon", isDirectory: true)
+            .path
+    }
+
     public static var socketPath: String { baseDir + "/kabigon.sock" }
     public static var queueDir: String { baseDir + "/queue" }
 
-    /// Moves pre-rename data into the Kabigon directory on first launch.
+    public static var legacyDotDir: String { NSHomeDirectory() + "/.kabigon" }
+    public static var legacyAgentPetDir: String { NSHomeDirectory() + "/.agentpet" }
+
+    /// Moves legacy data into Application Support on first launch.
     public static func migrateLegacyDataIfNeeded() {
         let fm = FileManager.default
-        let legacy = NSHomeDirectory() + "/.agentpet"
-        guard !fm.fileExists(atPath: baseDir), fm.fileExists(atPath: legacy) else { return }
-        try? fm.moveItem(atPath: legacy, toPath: baseDir)
+        let current = baseDir
+        guard !fm.fileExists(atPath: current) else { return }
+        try? fm.createDirectory(
+            atPath: URL(fileURLWithPath: current).deletingLastPathComponent().path,
+            withIntermediateDirectories: true
+        )
+
+        if fm.fileExists(atPath: legacyDotDir) {
+            try? fm.moveItem(atPath: legacyDotDir, toPath: current)
+            return
+        }
+
+        if fm.fileExists(atPath: legacyAgentPetDir) {
+            try? fm.moveItem(atPath: legacyAgentPetDir, toPath: current)
+        }
     }
 }

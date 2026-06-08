@@ -30,7 +30,8 @@ enum PetdexAssets {
     }
 }
 
-/// Downloads a pet pack (pet.json + spritesheet) into `~/.kabigon/pets/<slug>/`.
+/// Downloads a pet pack (pet.json + spritesheet) into Kabigon's Application
+/// Support directory.
 /// Shared by the Browse gallery and first-run onboarding.
 enum PetInstaller {
     private struct PackMeta: Decodable { let id: String?; let spritesheetPath: String }

@@ -37,6 +37,10 @@ struct PetView: View {
                 guard let reaction else { return }
                 triggerPetReaction(reaction)
             }
+            .task(id: progress.displayDex) {
+                guard progress.hasChosenStarter else { return }
+                await pmdStore.ensureLoaded(dex: progress.displayDex)
+            }
     }
 
     @ViewBuilder private var content: some View {
@@ -288,7 +292,7 @@ struct FloatingPetView: View {
                 ChatBubble(
                     text: pet.chatLine,
                     portrait: portrait,
-                    maxWidth: min(270, pet.windowSize.width - 20)
+                    maxWidth: min(270, pet.windowSize.width - 44)
                 )
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
@@ -312,6 +316,23 @@ private struct ChatBubble: View {
     let text: String
     var portrait: NSImage? = nil
     let maxWidth: CGFloat
+    private let font = NSFont.systemFont(ofSize: 12, weight: .medium)
+
+    private var portraitWidth: CGFloat {
+        portrait == nil ? 0 : 28
+    }
+
+    private var textWidth: CGFloat {
+        ceil((text as NSString).size(withAttributes: [.font: font]).width)
+    }
+
+    private var contentWidth: CGFloat {
+        min(maxWidth, max(1, textWidth + portraitWidth))
+    }
+
+    private var maxTextWidth: CGFloat {
+        max(1, contentWidth - portraitWidth)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -325,9 +346,10 @@ private struct ChatBubble: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.black.opacity(0.85))
                     .multilineTextAlignment(.leading)
+                    .frame(width: maxTextWidth, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: maxWidth, alignment: .leading)
+            .frame(width: contentWidth, alignment: .leading)
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
             .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.white))
@@ -338,7 +360,7 @@ private struct ChatBubble: View {
                 .fill(.white)
                 .frame(width: 12, height: 7)
         }
-        .frame(maxWidth: maxWidth + 24)
+        .frame(width: contentWidth + 24)
         .fixedSize(horizontal: false, vertical: true)
     }
 }

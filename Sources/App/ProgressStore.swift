@@ -13,7 +13,8 @@ struct PokemonEvolutionEvent: Equatable {
 
 /// Owns the player's progression: chosen starter line, total XP (earned by
 /// chatting with agents), affection (earned by petting), and the derived level
-/// and current evolved form. Persists to UserDefaults.
+/// and current evolved form. Persists to Application Support so progress
+/// survives deleting/replacing the app bundle and rebuilding locally.
 @MainActor
 final class ProgressStore: ObservableObject {
     static let shared = ProgressStore()
@@ -42,26 +43,48 @@ final class ProgressStore: ObservableObject {
     private static let pokemonXPKey = "agentpet.pokemonXP"
     private static let affectionKey = "agentpet.affection"
 
+    private struct SaveData: Codable {
+        var hasChosenStarter: Bool
+        var starterDex: Int
+        var displayDex: Int
+        var pokemonXP: [Int: Int]
+        var affection: Int
+    }
+
+    private static var saveURL: URL {
+        URL(fileURLWithPath: KabigonPaths.baseDir).appendingPathComponent("progress.json")
+    }
+
     init() {
         let d = UserDefaults.standard
         config = GameConfig.load()
-        hasChosenStarter = d.bool(forKey: Self.chosenKey)
-        let starter = d.object(forKey: Self.starterKey) as? Int ?? PMDCatalog.starterDexes[0]
-        starterDex = starter
-        if let data = d.data(forKey: Self.pokemonXPKey),
-           let decoded = try? JSONDecoder().decode([Int: Int].self, from: data) {
-            pokemonXP = decoded
-        } else {
-            pokemonXP = [:]
-        }
-        affection = d.integer(forKey: Self.affectionKey)
-        let legacyXP = d.integer(forKey: Self.xpKey)
-        let legacyLevel = config.level(forTotalXP: legacyXP)
-        let legacyForm = PMDCatalog.form(lineRoot: starter, level: legacyLevel, config: config).dex
-        displayDex = (d.object(forKey: Self.displayKey) as? Int) ?? legacyForm
 
-        migrateLegacyProgressIfNeeded(legacyXP: legacyXP, starter: starter)
+        if let saved = Self.loadSaveData() {
+            hasChosenStarter = saved.hasChosenStarter
+            starterDex = saved.starterDex
+            displayDex = saved.displayDex
+            pokemonXP = saved.pokemonXP
+            affection = saved.affection
+        } else {
+            hasChosenStarter = d.bool(forKey: Self.chosenKey)
+            let starter = d.object(forKey: Self.starterKey) as? Int ?? PMDCatalog.starterDexes[0]
+            starterDex = starter
+            if let data = d.data(forKey: Self.pokemonXPKey),
+               let decoded = try? JSONDecoder().decode([Int: Int].self, from: data) {
+                pokemonXP = decoded
+            } else {
+                pokemonXP = [:]
+            }
+            affection = d.integer(forKey: Self.affectionKey)
+            let legacyXP = d.integer(forKey: Self.xpKey)
+            let legacyLevel = config.level(forTotalXP: legacyXP)
+            let legacyForm = PMDCatalog.form(lineRoot: starter, level: legacyLevel, config: config).dex
+            displayDex = (d.object(forKey: Self.displayKey) as? Int) ?? legacyForm
+            migrateLegacyProgressIfNeeded(legacyXP: legacyXP, starter: starter)
+        }
+
         seedXPFromPokedex()
+        save()
         PMDPetStore.shared.preload(displayDex)
     }
 
@@ -105,9 +128,9 @@ final class ProgressStore: ObservableObject {
         d.set(dex, forKey: Self.starterKey)
         d.set(true, forKey: Self.chosenKey)
         if pokemonXP[dex] == nil { pokemonXP[dex] = 0 }
-        savePokemonXP()
         displayDex = dex
         d.set(displayDex, forKey: Self.displayKey)
+        save()
         PMDPetStore.shared.preload(dex)
         PokedexStore.shared.register(dex: dex, level: level(for: dex), isNew: false)
     }
@@ -119,6 +142,7 @@ final class ProgressStore: ObservableObject {
         seedXPIfNeeded(for: dex)
         displayDex = dex
         UserDefaults.standard.set(dex, forKey: Self.displayKey)
+        save()
         PMDPetStore.shared.preload(dex)
     }
 
@@ -130,7 +154,7 @@ final class ProgressStore: ObservableObject {
         seedXPIfNeeded(for: dex)
         let oldLevel = level(for: dex)
         pokemonXP[dex, default: 0] += amount
-        savePokemonXP()
+        save()
         let newLevel = level(for: dex)
         PokedexStore.shared.register(dex: dex, level: newLevel, isNew: false)
         if newLevel > oldLevel {
@@ -162,6 +186,7 @@ final class ProgressStore: ObservableObject {
         lastPetAt = now
         affection += config.affectionPerPet
         UserDefaults.standard.set(affection, forKey: Self.affectionKey)
+        save()
         return true
     }
 
@@ -178,7 +203,7 @@ final class ProgressStore: ObservableObject {
     private func seedXPIfNeeded(for dex: Int) {
         guard pokemonXP[dex] == nil else { return }
         pokemonXP[dex] = xp(for: dex)
-        savePokemonXP()
+        save()
     }
 
     private func seedXPFromPokedex() {
@@ -187,7 +212,7 @@ final class ProgressStore: ObservableObject {
             pokemonXP[entry.dex] = config.totalXP(forLevel: entry.level)
             changed = true
         }
-        if changed { savePokemonXP() }
+        if changed { save() }
     }
 
     private func migrateLegacyProgressIfNeeded(legacyXP: Int, starter: Int) {
@@ -205,12 +230,29 @@ final class ProgressStore: ObservableObject {
             pokemonXP[form.dex] = legacyXP
             PokedexStore.shared.register(dex: form.dex, level: legacyLevel, isNew: false)
         }
-        savePokemonXP()
+        save()
     }
 
-    private func savePokemonXP() {
+    private func save() {
         guard let data = try? JSONEncoder().encode(pokemonXP) else { return }
         UserDefaults.standard.set(data, forKey: Self.pokemonXPKey)
+
+        let saved = SaveData(
+            hasChosenStarter: hasChosenStarter,
+            starterDex: starterDex,
+            displayDex: displayDex,
+            pokemonXP: pokemonXP,
+            affection: affection
+        )
+        try? FileManager.default.createDirectory(
+            at: URL(fileURLWithPath: KabigonPaths.baseDir), withIntermediateDirectories: true)
+        guard let savedData = try? EventCoding.encoder.encode(saved) else { return }
+        try? savedData.write(to: Self.saveURL)
+    }
+
+    private static func loadSaveData() -> SaveData? {
+        guard let data = try? Data(contentsOf: saveURL) else { return nil }
+        return try? EventCoding.decoder.decode(SaveData.self, from: data)
     }
 
     private func applyEvolutionIfNeeded(from dex: Int, level: Int) {
@@ -226,7 +268,7 @@ final class ProgressStore: ObservableObject {
             )
             PokedexStore.shared.register(dex: rule.toDex, level: level, isNew: true)
         }
-        savePokemonXP()
+        save()
 
         guard let primary = unlocked.first else { return }
         let nextDex = primary.toDex
@@ -237,6 +279,7 @@ final class ProgressStore: ObservableObject {
             if displayDex == dex {
                 displayDex = nextDex
                 UserDefaults.standard.set(nextDex, forKey: Self.displayKey)
+                save()
             }
             justEvolvedTo = PokemonEvolutionEvent(dex: nextDex, name: name)
         }

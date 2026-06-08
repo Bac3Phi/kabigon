@@ -402,10 +402,13 @@ private struct CaughtPokemonGrid: View {
                     entry: entry,
                     loaded: pmdStore.loaded(dex: entry.dex),
                     isActive: entry.dex == activeDex,
-                    level: progress.level(for: entry.dex)
+                    level: progress.level(for: entry.dex),
+                    isLoading: pmdStore.isLoading(dex: entry.dex),
+                    didFail: pmdStore.didFail(dex: entry.dex),
+                    onRetry: { pmdStore.retry(dex: entry.dex) }
                 )
                 .onTapGesture { onSelect(entry.dex) }
-                .onAppear { pmdStore.preload(entry.dex) }
+                .task(id: entry.dex) { await pmdStore.ensureLoaded(dex: entry.dex) }
             }
         }
     }
@@ -416,6 +419,9 @@ private struct CaughtPokemonCard: View {
     let loaded: PMDLoadedSpecies?
     let isActive: Bool
     let level: Int
+    let isLoading: Bool
+    let didFail: Bool
+    let onRetry: () -> Void
 
     private var sprite: NSImage? {
         loaded?.anim("Idle")?.frames.first
@@ -431,6 +437,15 @@ private struct CaughtPokemonCard: View {
                 if let sprite {
                     Image(nsImage: sprite)
                         .resizable().interpolation(.none).scaledToFit()
+                } else if isLoading {
+                    ProgressView().controlSize(.small)
+                } else if didFail {
+                    Button(action: onRetry) {
+                        Image(systemName: "arrow.clockwise.circle.fill")
+                            .font(.system(size: 20))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Retry asset download")
                 } else {
                     Image(systemName: "pawprint.fill").foregroundStyle(.secondary)
                 }

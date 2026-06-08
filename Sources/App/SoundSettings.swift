@@ -3,7 +3,7 @@ import KabigonCore
 
 /// Plays a sound when an agent finishes or needs input. Each event has its own
 /// on/off and sound choice (a built-in macOS system sound, or a custom file the
-/// user uploads). Custom files are copied into `~/.kabigon/sounds/`.
+/// user uploads). Custom files are copied into Kabigon's Application Support directory.
 @MainActor
 final class SoundSettings: ObservableObject {
     static let shared = SoundSettings()

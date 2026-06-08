@@ -19,8 +19,8 @@ public struct PokedexEntry: Codable, Sendable, Equatable, Identifiable {
     }
 }
 
-/// The player's whole collection, persisted to `~/.kabigon/pokedex.json` so the
-/// caught species, their levels, and progress survive across launches.
+/// The player's whole collection, persisted in Application Support so the caught
+/// species, their levels, and progress survive across launches.
 public struct PokedexData: Codable, Sendable, Equatable {
     public var entries: [PokedexEntry]
 

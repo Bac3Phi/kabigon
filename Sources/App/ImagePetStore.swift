@@ -1,7 +1,7 @@
 import AppKit
 import KabigonCore
 
-/// Loads and imports spritesheet pet packs from `~/.kabigon/pets/`.
+/// Loads and imports spritesheet pet packs from Kabigon's Application Support directory.
 @MainActor
 final class ImagePetStore: ObservableObject {
     static let shared = ImagePetStore()
