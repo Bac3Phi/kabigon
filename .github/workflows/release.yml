@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -14,6 +14,20 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve release tag
+        run: |
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' scripts/AppInfo.plist)"
+          TAG="v$VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Tag current commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f "$RELEASE_TAG" "$GITHUB_SHA"
+          git push --force origin "refs/tags/$RELEASE_TAG"
 
       - name: Select Xcode 16 (Swift 6)
         run: sudo xcode-select -s /Applications/Xcode_16.app
@@ -27,7 +41,16 @@ jobs:
         env:
           CERT: ${{ secrets.MACOS_CERT_P12 }}
 
-      - name: Build DMG (sign + notarize if secrets present)
+      - name: Build app for ZIP
+        run: ./scripts/build-app.sh release
+
+      - name: Create ZIP release asset
+        run: |
+          ditto -c -k --keepParent build/Kabigon.app "build/Kabigon-$VERSION.zip"
+          shasum -a 256 "build/Kabigon-$VERSION.zip"
+
+      - name: Build DMG (optional)
+        continue-on-error: true
         run: ./scripts/ci-dmg.sh
         env:
           SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
@@ -35,22 +58,14 @@ jobs:
           AC_KEY_ID: ${{ secrets.AC_KEY_ID }}
           AC_ISSUER_ID: ${{ secrets.AC_ISSUER_ID }}
 
-      - name: Create ZIP release asset
-        run: |
-          VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' scripts/AppInfo.plist)"
-          ditto -c -k --keepParent build/Kabigon.app "build/Kabigon-$VERSION.zip"
-          shasum -a 256 "build/Kabigon-$VERSION.zip"
-
       - name: Publish to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' scripts/AppInfo.plist)"
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            TAG="$GITHUB_REF_NAME"
-          else
-            TAG="v$VERSION"
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 \
+            || gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --title "Kabigon $RELEASE_TAG" --generate-notes
+          assets=(build/*.zip)
+          if compgen -G "build/*.dmg" > /dev/null; then
+            assets+=(build/*.dmg)
           fi
-          gh release view "$TAG" >/dev/null 2>&1 \
-            || gh release create "$TAG" --title "Kabigon $TAG" --generate-notes
-          gh release upload "$TAG" build/*.dmg build/*.zip --clobber
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
