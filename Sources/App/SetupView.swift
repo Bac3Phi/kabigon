@@ -213,6 +213,16 @@ private struct GeneralTab: View {
                 }
             }
 
+            Section("About") {
+                HStack {
+                    Text("Version")
+                    Spacer()
+                    Text(versionLabel)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            }
+
             Section {
                 Button("Quit Kabigon") { NSApplication.shared.terminate(nil) }
             }
@@ -228,6 +238,16 @@ private struct GeneralTab: View {
         case .celebrate: return "Celebrate"
         case .idle: return "Idle"
         }
+    }
+
+    private var versionLabel: String {
+        let info = Bundle.main.infoDictionary
+        guard let version = info?["CFBundleShortVersionString"] as? String else {
+            return "Development"
+        }
+        let build = info?["CFBundleVersion"] as? String
+        guard let build, build != version else { return version }
+        return "\(version) (\(build))"
     }
 
     private var notificationTitle: String {
@@ -360,29 +380,7 @@ private struct PetTab: View {
 
 private enum PokemonDescriptions {
     static func text(for dex: Int) -> String {
-        switch dex {
-        case 1:
-            return "A strange seed was planted on its back at birth. The plant grows by soaking up sunlight."
-        case 2:
-            return "The bud on its back grows larger as it absorbs energy. When the bud is ready, it gives off a sweet aroma."
-        case 3:
-            return "The flower on its back blooms in bright sunlight, drawing energy into its powerful body."
-        case 4:
-            return "The flame on its tail shows its life force and mood. It burns brighter when Charmander is fired up."
-        case 5:
-            return "A hot-headed Pokémon with sharp claws and a burning tail. It is quick to battle when excited."
-        case 6:
-            return "It flies through the sky on broad wings and breathes intense fire when facing strong opponents."
-        case 7:
-            return "Its shell protects it in battle and helps it move through water with steady, controlled bursts."
-        case 8:
-            return "Its fluffy ears and tail are symbols of age and skill. It uses its shell and balance to fight well."
-        case 9:
-            return "The water cannons on its shell fire powerful blasts with enough force to overwhelm tough foes."
-        default:
-            let name = Gen1Pokedex.name(for: dex) ?? "This Pokémon"
-            return "\(name) is registered in your Kanto Pokédex and is currently available as your on-screen companion. It keeps its own level and XP when you switch Pokémon."
-        }
+        Gen1Pokedex.description(for: dex) ?? "No Pokédex description is available."
     }
 }
 

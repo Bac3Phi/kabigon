@@ -48,12 +48,14 @@ final class PetController: ObservableObject {
     private var latestSessions: [AgentSession] = []
     private var celebrateTimer: Timer?
     private var chatTimer: Timer?
+    private var chatHideTimer: Timer?
     private var petReactionTimer: Timer?
 
     private static let petKey = "agentpet.selectedPetID"
     private static let chatKey = "agentpet.showChat"
     private static let sizeKey = "agentpet.petSize"
     private static let celebrateDuration: TimeInterval = 3
+    private static let chatDisplayDuration: TimeInterval = 4
 
     init() {
         selectedPetID = UserDefaults.standard.string(forKey: Self.petKey)
@@ -63,10 +65,7 @@ final class PetController: ObservableObject {
     }
 
     func start() {
-        // Vary the chat line periodically while the pet is active.
-        chatTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
-            Task { @MainActor [weak self] in self?.refreshChat() }
-        }
+        scheduleNextChat()
     }
 
     private var sizeAnimTimer: Timer?
@@ -120,10 +119,11 @@ final class PetController: ObservableObject {
     }
 
     private func settleAfterCelebrate() {
-        setMood(MoodResolver.aggregate(latestSessions))
+        setMood(MoodResolver.aggregate(latestSessions), announce: false)
     }
 
-    private func setMood(_ newMood: PetMood) {
+    private func setMood(_ newMood: PetMood, announce: Bool = true) {
+        let changed = mood != newMood
         mood = newMood
         if newMood == .working {
             workingVisualStyle = resolveWorkingVisualStyle(message: representativeMessage(for: newMood))
@@ -131,7 +131,14 @@ final class PetController: ObservableObject {
         if petReactionTimer == nil {
             emotion = EmotionResolver.resolve(mood: newMood, message: representativeMessage(for: newMood))
         }
-        refreshChat()
+        if changed {
+            if announce {
+                refreshChat()
+            } else {
+                dismissChat()
+            }
+            scheduleNextChat()
+        }
     }
 
     private func resolveWorkingVisualStyle(message: String?) -> WorkingVisualStyle {
@@ -186,6 +193,7 @@ final class PetController: ObservableObject {
         duration: TimeInterval
     ) {
         petReactionTimer?.invalidate()
+        chatHideTimer?.invalidate()
         self.emotion = emotion
         petReaction = PetReactionEvent(symbol: symbol, animationNames: animationNames)
         if showChat { chatLine = message }
@@ -195,7 +203,8 @@ final class PetController: ObservableObject {
                 guard let self else { return }
                 self.petReactionTimer = nil
                 self.petReaction = nil
-                self.setMood(self.mood)
+                self.dismissChat()
+                self.setMood(self.mood, announce: false)
             }
         }
     }
@@ -227,6 +236,41 @@ final class PetController: ObservableObject {
         }
         chatLine = pool.randomElement() ?? ""
         StatusBarController.shared.refreshTitle()
+        chatHideTimer?.invalidate()
+        chatHideTimer = Timer.scheduledTimer(
+            withTimeInterval: Self.chatDisplayDuration,
+            repeats: false
+        ) { _ in
+            Task { @MainActor [weak self] in self?.dismissChat() }
+        }
+    }
+
+    private func dismissChat() {
+        chatHideTimer?.invalidate()
+        chatLine = ""
+        StatusBarController.shared.refreshTitle()
+    }
+
+    private func scheduleNextChat() {
+        chatTimer?.invalidate()
+        let delay: TimeInterval
+        switch mood {
+        case .working:
+            delay = .random(in: 25...40)
+        case .waiting:
+            delay = .random(in: 45...70)
+        case .idle, .done:
+            delay = .random(in: 60...90)
+        case .celebrate:
+            return
+        }
+        chatTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.refreshChat()
+                self.scheduleNextChat()
+            }
+        }
     }
 }
 

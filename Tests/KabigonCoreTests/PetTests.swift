@@ -79,6 +79,15 @@ final class PokedexDataTests: XCTestCase {
         XCTAssertNil(Gen1Pokedex.name(for: 152))
     }
 
+    func testEveryGen1PokemonHasASpeciesDescription() {
+        XCTAssertEqual(Gen1Pokedex.descriptions.count, Gen1Pokedex.count)
+        for dex in Gen1Pokedex.dexRange {
+            XCTAssertFalse(Gen1Pokedex.description(for: dex)?.isEmpty ?? true, "Missing description for #\(dex)")
+        }
+        XCTAssertNil(Gen1Pokedex.description(for: 0))
+        XCTAssertNil(Gen1Pokedex.description(for: 152))
+    }
+
     func testPersistenceRoundTrip() throws {
         let dir = NSTemporaryDirectory() + "kabigon-tests-" + UUID().uuidString
         defer { try? FileManager.default.removeItem(atPath: dir) }
