@@ -9,13 +9,20 @@ ROOT="$(pwd)"
 APP="$ROOT/build/Kabigon.app"
 CONFIG="${1:-release}"
 
-# Build a universal binary (Apple Silicon + Intel) so the app runs on both.
-# Apple Silicon machines still run the native arm64 slice, unchanged.
-ARCHS=(--arch arm64 --arch x86_64)
+# Build a universal binary (Apple Silicon + Intel) by default so the app runs
+# on both. CI can set KABIGON_UNIVERSAL=0 to produce a native fallback ZIP when
+# universal release builds are unavailable on the runner.
+if [ "${KABIGON_UNIVERSAL:-1}" = "0" ]; then
+    ARCH_LABEL="native"
+    SWIFT_BUILD_ARGS=(-c "$CONFIG")
+else
+    ARCH_LABEL="universal arm64 + x86_64"
+    SWIFT_BUILD_ARGS=(-c "$CONFIG" --arch arm64 --arch x86_64)
+fi
 
-echo "Building ($CONFIG, universal arm64 + x86_64)..."
-swift build -c "$CONFIG" "${ARCHS[@]}"
-BINDIR="$(swift build -c "$CONFIG" "${ARCHS[@]}" --show-bin-path)"
+echo "Building ($CONFIG, $ARCH_LABEL)..."
+swift build "${SWIFT_BUILD_ARGS[@]}"
+BINDIR="$(swift build "${SWIFT_BUILD_ARGS[@]}" --show-bin-path)"
 
 echo "Assembling $APP ..."
 rm -rf "$APP"

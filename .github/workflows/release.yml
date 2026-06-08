@@ -42,7 +42,11 @@ jobs:
           CERT: ${{ secrets.MACOS_CERT_P12 }}
 
       - name: Build app for ZIP
-        run: ./scripts/build-app.sh release
+        run: |
+          ./scripts/build-app.sh release || {
+            echo "Universal app build failed; retrying native release build for ZIP."
+            KABIGON_UNIVERSAL=0 ./scripts/build-app.sh release
+          }
 
       - name: Create ZIP release asset
         run: |
