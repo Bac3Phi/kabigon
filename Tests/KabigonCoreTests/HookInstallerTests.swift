@@ -1,0 +1,81 @@
+import XCTest
+@testable import KabigonCore
+
+final class HookInstallerTests: XCTestCase {
+    private let cmd = "\"/Applications/Kabigon.app/Contents/MacOS/kabigon\" hook"
+
+    private func groups(_ settings: [String: Any], _ event: String) -> [[String: Any]] {
+        (settings["hooks"] as? [String: Any])?[event] as? [[String: Any]] ?? []
+    }
+
+    func testInstallIntoEmptyAddsAllEvents() {
+        let result = HookInstaller.install(into: [:], command: cmd)
+        XCTAssertTrue(HookInstaller.isInstalled(in: result))
+        for event in HookInstaller.events {
+            XCTAssertEqual(groups(result, event).count, 1, "event \(event)")
+        }
+    }
+
+    func testInstallIsIdempotent() {
+        let once = HookInstaller.install(into: [:], command: cmd)
+        let twice = HookInstaller.install(into: once, command: cmd)
+        for event in HookInstaller.events {
+            XCTAssertEqual(groups(twice, event).count, 1, "no duplicate on \(event)")
+        }
+    }
+
+    func testLegacyAgentPetHookIsRecognizedAndReplaced() {
+        let legacy = "\"/Applications/AgentPet.app/Contents/MacOS/agentpet\" hook"
+        let existing: [String: Any] = [
+            "hooks": ["Stop": [["hooks": [["type": "command", "command": legacy]]]]],
+        ]
+        let result = HookInstaller.install(into: existing, command: cmd, events: ["Stop"])
+        XCTAssertEqual(groups(result, "Stop").count, 1)
+        XCTAssertTrue(HookInstaller.isInstalled(in: result, events: ["Stop"]))
+    }
+
+    func testPartialInstallIsNotInstalled() {
+        let settings: [String: Any] = [
+            "hooks": [
+                "SessionStart": [
+                    ["hooks": [["type": "command", "command": cmd]]],
+                ],
+            ],
+        ]
+        XCTAssertFalse(HookInstaller.isInstalled(in: settings, events: ["SessionStart", "Stop"]))
+    }
+
+    func testInstallPreservesForeignHooks() {
+        let existing: [String: Any] = [
+            "hooks": ["Stop": [["hooks": [["type": "command", "command": "echo done"]]]]],
+        ]
+        let result = HookInstaller.install(into: existing, command: cmd)
+        XCTAssertEqual(groups(result, "Stop").count, 2, "foreign + ours")
+    }
+
+    func testUninstallRemovesOursKeepsForeign() {
+        let existing: [String: Any] = [
+            "hooks": ["Stop": [["hooks": [["type": "command", "command": "echo done"]]]]],
+        ]
+        let installed = HookInstaller.install(into: existing, command: cmd)
+        let removed = HookInstaller.uninstall(from: installed)
+        XCTAssertFalse(HookInstaller.isInstalled(in: removed))
+        XCTAssertEqual(groups(removed, "Stop").count, 1, "foreign hook survives")
+        // Events that were only ours are dropped entirely.
+        XCTAssertTrue(groups(removed, "SessionStart").isEmpty)
+    }
+
+    func testUninstallFromCleanIsNoop() {
+        let removed = HookInstaller.uninstall(from: [:])
+        XCTAssertNil(removed["hooks"])
+    }
+
+    func testDiskRoundTrip() throws {
+        let path = NSTemporaryDirectory() + "settings-\(UUID().uuidString).json"
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        try HookInstaller.installToDisk(command: cmd, path: path)
+        XCTAssertTrue(HookInstaller.isInstalledOnDisk(path: path))
+        try HookInstaller.uninstallFromDisk(path: path)
+        XCTAssertFalse(HookInstaller.isInstalledOnDisk(path: path))
+    }
+}

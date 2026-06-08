@@ -1,0 +1,55 @@
+import Foundation
+
+/// Normalised lifecycle state of an agent session, independent of which
+/// agent (Claude Code, Codex, ...) produced it.
+public enum AgentState: String, Codable, Sendable, CaseIterable {
+    /// Session announced itself but has not started working yet.
+    case registered
+    /// Actively running (prompt submitted, tools executing).
+    case working
+    /// Blocked on the user (needs input or a permission decision).
+    case waiting
+    /// Finished a turn.
+    case done
+    /// Done and quiet for a while; ambient/no attention needed.
+    case idle
+}
+
+/// Which agent a session belongs to.
+public enum AgentKind: String, Codable, Sendable {
+    case claude
+    case codex
+    case gemini
+    case cursor
+    case opencode
+    case windsurf
+    case augment
+    case hermes
+    /// Any CLI agent launched via the `kabigon run` wrapper.
+    case cli
+    case unknown
+
+    /// Human-readable name for display in the UI and notifications.
+    public var displayName: String {
+        switch self {
+        case .claude: return "Claude Code"
+        case .codex: return "Codex"
+        case .gemini: return "Gemini"
+        case .cursor: return "Cursor"
+        case .opencode: return "opencode"
+        case .windsurf: return "Windsurf"
+        case .augment: return "Augment"
+        case .hermes: return "Hermes"
+        case .cli: return "CLI"
+        case .unknown: return "Agent"
+        }
+    }
+}
+
+/// How a session's state was learned.
+public enum AgentSource: String, Codable, Sendable {
+    /// Reported precisely by the agent through a hook.
+    case hook
+    /// Inferred by passively observing processes (running / not running only).
+    case passive
+}

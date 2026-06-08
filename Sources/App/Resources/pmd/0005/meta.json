@@ -1,0 +1,108 @@
+{
+  "anims" : {
+    "Charge" : {
+      "durations" : [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "frameCount" : 10
+    },
+    "Eat" : {
+      "durations" : [
+        6,
+        8,
+        6,
+        8
+      ],
+      "frameCount" : 4
+    },
+    "Hop" : {
+      "durations" : [
+        2,
+        1,
+        2,
+        3,
+        4,
+        4,
+        3,
+        2,
+        1,
+        2
+      ],
+      "frameCount" : 10
+    },
+    "Hurt" : {
+      "durations" : [
+        2,
+        8
+      ],
+      "frameCount" : 2
+    },
+    "Idle" : {
+      "durations" : [
+        40,
+        2,
+        3,
+        3,
+        3,
+        2
+      ],
+      "frameCount" : 6
+    },
+    "Nod" : {
+      "durations" : [
+        6,
+        8,
+        6
+      ],
+      "frameCount" : 3
+    },
+    "Pose" : {
+      "durations" : [
+        12,
+        2,
+        8
+      ],
+      "frameCount" : 3
+    },
+    "Sleep" : {
+      "durations" : [
+        30,
+        35
+      ],
+      "frameCount" : 2
+    },
+    "Walk" : {
+      "durations" : [
+        8,
+        10,
+        8,
+        10
+      ],
+      "frameCount" : 4
+    }
+  },
+  "dex" : 5,
+  "portraits" : [
+    "Normal",
+    "Happy",
+    "Sad",
+    "Angry",
+    "Worried",
+    "Determined",
+    "Joyous",
+    "Inspired",
+    "Surprised",
+    "Crying",
+    "Pain",
+    "Dizzy"
+  ]
+}

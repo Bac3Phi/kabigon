@@ -1,0 +1,94 @@
+import AppKit
+import SwiftUI
+
+/// Owns the onboarding/Settings window, shown on first launch and reopenable
+/// from the menu bar.
+@MainActor
+final class SettingsWindowController: NSObject, NSWindowDelegate {
+    static let shared = SettingsWindowController()
+
+    private var window: NSWindow?
+
+    func show() {
+        SettingsModel.shared.refresh()
+
+        // Always rebuild so the window opens fresh (default tab, scrolled to top)
+        // instead of restoring the previous session's state.
+        window?.close()
+        window = nil
+
+        // Show a Dock icon while Settings is open (requires .regular policy).
+        NSApp.setActivationPolicy(.regular)
+
+        let host = NSHostingView(rootView: SetupView(onClose: { [weak self] in
+            self?.window?.close()
+        }))
+        // A normal window (not NSPanel) so SwiftUI text fields reliably receive
+        // keyboard input. Settings intentionally takes focus (shows a Dock icon).
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 600),
+            styleMask: [.titled, .closable],
+            backing: .buffered, defer: false
+        )
+        window.title = "Kabigon"
+        window.delegate = self
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        window.center()
+        self.window = window
+
+        // Present on the next runloop tick so it reliably comes to the front
+        // after the popover closes and the activation policy change settles.
+        DispatchQueue.main.async {
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        if (notification.object as? NSWindow) === onboardingWindow {
+            UserDefaults.standard.set(true, forKey: "agentpet.hasOnboarded")
+            onboardingWindow = nil
+        } else {
+            window = nil
+        }
+        // Back to a menu bar accessory (no Dock icon) when no window is open.
+        if window == nil && onboardingWindow == nil {
+            NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
+    /// Shows the welcome/onboarding window on first launch, or whenever the
+    /// player hasn't chosen a starter yet (e.g. upgrading from the old system).
+    func showOnFirstLaunch() {
+        let hasOnboarded = UserDefaults.standard.bool(forKey: "agentpet.hasOnboarded")
+        let hasStarter = ProgressStore.shared.hasChosenStarter
+        guard !hasOnboarded || !hasStarter else { return }
+        showOnboarding()
+    }
+
+    private var onboardingWindow: NSWindow?
+
+    func showOnboarding() {
+        SettingsModel.shared.refresh()
+        let host = NSHostingView(rootView: OnboardingView(onFinish: { [weak self] in
+            self?.onboardingWindow?.close()
+        }))
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 640),
+            styleMask: [.titled, .closable], backing: .buffered, defer: false
+        )
+        window.title = "Welcome to Kabigon"
+        window.delegate = self
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        window.center()
+        onboardingWindow = window
+
+        NSApp.setActivationPolicy(.regular)
+        DispatchQueue.main.async {
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+        }
+    }
+}
