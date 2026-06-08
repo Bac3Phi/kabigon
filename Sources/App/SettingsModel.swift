@@ -40,7 +40,7 @@ final class SettingsModel: ObservableObject {
             }
         }
         installedKinds = set
-        Task { await refreshNotificationState() }
+        refreshNotificationState()
     }
 
     func isInstalled(_ kind: AgentKind) -> Bool {
@@ -82,11 +82,10 @@ final class SettingsModel: ObservableObject {
 
     func enableNotifications() {
         guard NotificationManager.shared.isAvailable else { return }
-        Task {
-            _ = try? await UNUserNotificationCenter.current()
-                .requestAuthorization(options: [.alert, .sound])
-            await refreshNotificationState()
-        }
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: [.alert, .sound],
+            completionHandler: Self.authorizationCompleted
+        )
     }
 
     /// Opens System Settings to Kabigon's notification pane (used when denied).
@@ -96,13 +95,31 @@ final class SettingsModel: ObservableObject {
         }
     }
 
-    private func refreshNotificationState() async {
+    private func refreshNotificationState() {
         guard NotificationManager.shared.isAvailable else {
             notificationState = .unavailable
             return
         }
-        let settings = await UNUserNotificationCenter.current().notificationSettings()
-        switch settings.authorizationStatus {
+        UNUserNotificationCenter.current().getNotificationSettings(
+            completionHandler: Self.notificationSettingsReceived
+        )
+    }
+
+    nonisolated private static func authorizationCompleted(_: Bool, _: Error?) {
+        Task { @MainActor in
+            SettingsModel.shared.refreshNotificationState()
+        }
+    }
+
+    nonisolated private static func notificationSettingsReceived(_ settings: UNNotificationSettings) {
+        let status = settings.authorizationStatus
+        Task { @MainActor in
+            SettingsModel.shared.applyNotificationStatus(status)
+        }
+    }
+
+    private func applyNotificationStatus(_ status: UNAuthorizationStatus) {
+        switch status {
         case .authorized, .provisional, .ephemeral:
             notificationState = .enabled
         case .denied:
