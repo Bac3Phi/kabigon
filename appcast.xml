@@ -8,12 +8,12 @@
         <description>Release feed for Kabigon.</description>
         <language>en</language>
         <item>
-            <title>Kabigon 1.1.14</title>
-            <sparkle:version>1.1.14</sparkle:version>
-            <sparkle:shortVersionString>1.1.14</sparkle:shortVersionString>
+            <title>Kabigon 1.1.15</title>
+            <sparkle:version>1.1.15</sparkle:version>
+            <sparkle:shortVersionString>1.1.15</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/Bac3Phi/kabigon/releases/download/v1.1.14/Kabigon-1.1.14.zip"
-                       sparkle:edSignature="UzJlzVMy2K8Ja2/kNeAE9ADRQZj4mSsU8wu4y7r1eT0q3TL5eyM/AWOuoHKKKHknPWHuxUu5X1wsqP/cboBJBw==" length="2611582" type="application/zip" />
+            <enclosure url="https://github.com/Bac3Phi/kabigon/releases/download/v1.1.15/Kabigon-1.1.15.zip"
+                       sparkle:edSignature="lnCnITsJB6zS0b4dlewzAfvsfq6SJxhUlCHHX1gq5FO18CpKOOW1sE8DRWLleAnFppMihnhz4LwYjtAURUZgDg==" length="2612753" type="application/zip" />
         </item>
     </channel>
 </rss>
