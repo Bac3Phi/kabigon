@@ -13,7 +13,7 @@
             <sparkle:shortVersionString>1.1.11</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/Bac3Phi/kabigon/releases/download/v1.1.11/Kabigon-1.1.11.zip"
-                       sparkle:edSignature="nubRJRboyS+uiwSZvnIPNGhYPDPlc2ESV3iXeP9FXUMNzSQpMQTLvYFqAg0SBrkAKNS2cFKre+hzqL5JQtYODw==" length="2605421" type="application/zip" />
+                       sparkle:edSignature="ce5RO/mD9K9Et9NjSc7FtVIiD8Vks0CwmDd6KEEOVykZ51BiajsTu3qEz0Hk5ZFKS6vSBOPb1jx+60LYbmBsCA==" length="2605416" type="application/zip" />
         </item>
     </channel>
 </rss>
