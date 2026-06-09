@@ -49,9 +49,7 @@ struct OnboardingView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(Color.systemAccent).frame(width: 34, height: 34)
-                    .overlay(Image(systemName: "pawprint.fill").font(.system(size: 17)).foregroundStyle(.white))
+                KabigonLogoMark(iconSize: 34, cornerRadius: 9, background: .systemAccent)
                 Text("Welcome to Kabigon").font(.title2.bold()).foregroundStyle(.white)
             }
             Text("A desktop pet that watches your AI coding agents. Two quick steps to get going.")

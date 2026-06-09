@@ -48,10 +48,7 @@ struct MenuContentView: View {
 
     private var header: some View {
         HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Theme.accent)
-                .frame(width: 28, height: 28)
-                .overlay(Image(systemName: "pawprint.fill").font(.system(size: 13)).foregroundStyle(.white))
+            KabigonLogoMark(iconSize: 28, cornerRadius: 8)
             VStack(alignment: .leading, spacing: 1) {
                 Text("Kabigon").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
                 Text(subtitle).font(.system(size: 11)).foregroundStyle(.white.opacity(0.5))

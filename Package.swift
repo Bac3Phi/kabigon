@@ -16,7 +16,10 @@ let package = Package(
             name: "kabigon",
             dependencies: ["KabigonCore", .product(name: "Sparkle", package: "Sparkle")],
             path: "Sources/App",
-            resources: [.copy("Resources/pmd")]
+            resources: [
+                .copy("Resources/KabigonLogo.png"),
+                .copy("Resources/pmd"),
+            ]
         ),
         .testTarget(
             name: "KabigonCoreTests",
