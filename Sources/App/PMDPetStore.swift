@@ -3,8 +3,12 @@ import KabigonCore
 
 /// One animation clip: its frames and per-frame PMD durations (frame units).
 struct PMDAnim {
-    let frames: [NSImage]
+    let variants: [[NSImage]]
     let durations: [Int]
+
+    var frames: [NSImage] {
+        variants.first ?? []
+    }
 }
 
 /// A fully loaded species: its animation clips and emotion portraits, sliced
@@ -33,11 +37,19 @@ final class PMDPetStore: ObservableObject {
     @Published private(set) var loading: Set<Int> = []
     @Published private(set) var failed: Set<Int> = []
 
-    private struct AnimMeta: Decodable { let frameCount: Int; let durations: [Int] }
+    private struct AnimMeta: Decodable {
+        let frameCount: Int
+        let durations: [Int]
+        let variantCount: Int?
+    }
     private struct SpeciesMeta: Decodable {
         let dex: Int
         let anims: [String: AnimMeta]
         let portraits: [String]
+
+        var hasModernAnimationVariants: Bool {
+            anims.values.contains { $0.variantCount != nil }
+        }
     }
 
     /// Cache lookup only — safe to call from a view body (no mutation).
@@ -62,7 +74,8 @@ final class PMDPetStore: ObservableObject {
     /// Use this for freshly encountered Pokémon outside the bundled set.
     func ensureLoaded(dex: Int, forceDownload: Bool = false) async {
         if cache[dex] != nil { return }
-        if !forceDownload {
+        let hasStaleCache = hasStaleCache(dex: dex)
+        if !forceDownload, !hasStaleCache {
             preload(dex)
             if cache[dex] != nil {
                 failed.remove(dex)
@@ -75,6 +88,10 @@ final class PMDPetStore: ObservableObject {
 
         let ok = await PMDAssetDownloader.download(dex: dex, force: forceDownload)
         guard ok, let species = load(dex: dex) else {
+            if hasStaleCache {
+                preload(dex)
+                if cache[dex] != nil { return }
+            }
             failed.insert(dex)
             return
         }
@@ -101,7 +118,8 @@ final class PMDPetStore: ObservableObject {
     private func metaDir(dex: Int) -> URL? {
         let fm = FileManager.default
         let cacheDir = PMDAssetDownloader.cacheDir(dex: dex)
-        if fm.fileExists(atPath: cacheDir.appendingPathComponent("meta.json").path) {
+        let cacheMeta = cacheDir.appendingPathComponent("meta.json")
+        if fm.fileExists(atPath: cacheMeta.path), isModernMeta(cacheMeta) {
             return cacheDir
         }
         if let bundle = bundleRootURL {
@@ -110,7 +128,7 @@ final class PMDPetStore: ObservableObject {
                 return bundleDir
             }
         }
-        return nil
+        return fm.fileExists(atPath: cacheMeta.path) ? cacheDir : nil
     }
 
     private func load(dex: Int) -> PMDLoadedSpecies? {
@@ -121,13 +139,20 @@ final class PMDPetStore: ObservableObject {
         var anims: [String: PMDAnim] = [:]
         for (name, animMeta) in meta.anims {
             let clipDir = dir.appendingPathComponent("anim").appendingPathComponent(name)
-            var frames: [NSImage] = []
-            for i in 0..<animMeta.frameCount {
-                let url = clipDir.appendingPathComponent("\(i).png")
-                if let img = NSImage(contentsOf: url) { frames.append(img) }
+            var variants: [[NSImage]] = []
+            if let variantCount = animMeta.variantCount, variantCount > 0 {
+                for variant in 0..<variantCount {
+                    let variantDir = clipDir.appendingPathComponent("\(variant)")
+                    let frames = loadFrames(from: variantDir, count: animMeta.frameCount)
+                    if !frames.isEmpty { variants.append(frames) }
+                }
             }
-            guard !frames.isEmpty else { continue }
-            anims[name] = PMDAnim(frames: frames, durations: animMeta.durations)
+            if variants.isEmpty {
+                let frames = loadFrames(from: clipDir, count: animMeta.frameCount)
+                if !frames.isEmpty { variants.append(frames) }
+            }
+            guard !variants.isEmpty else { continue }
+            anims[name] = PMDAnim(variants: variants, durations: animMeta.durations)
         }
 
         var portraits: [String: NSImage] = [:]
@@ -139,6 +164,26 @@ final class PMDPetStore: ObservableObject {
         guard !anims.isEmpty else { return nil }
         return PMDLoadedSpecies(dex: meta.dex, anims: anims, portraits: portraits)
     }
+
+    private func loadFrames(from dir: URL, count: Int) -> [NSImage] {
+        var frames: [NSImage] = []
+        for i in 0..<count {
+            let url = dir.appendingPathComponent("\(i).png")
+            if let img = NSImage(contentsOf: url) { frames.append(img) }
+        }
+        return frames
+    }
+
+    private func hasStaleCache(dex: Int) -> Bool {
+        let cacheMeta = PMDAssetDownloader.cacheDir(dex: dex).appendingPathComponent("meta.json")
+        return FileManager.default.fileExists(atPath: cacheMeta.path) && !isModernMeta(cacheMeta)
+    }
+
+    private func isModernMeta(_ url: URL) -> Bool {
+        guard let data = try? Data(contentsOf: url),
+              let meta = try? JSONDecoder().decode(SpeciesMeta.self, from: data) else { return false }
+        return meta.hasModernAnimationVariants
+    }
 }
 
 /// Maps the aggregate pet mood to a PMD animation clip and emotion portrait.
@@ -146,11 +191,11 @@ enum PMDMoodMap {
     /// Preferred clip names by mood, in fallback order (Idle is the safety net).
     static func animNames(for mood: PetMood) -> [String] {
         switch mood {
-        case .idle: return ["Idle"]
-        case .working: return ["Charge", "Walk", "Idle"]
-        case .waiting: return ["Pose", "Idle"]
-        case .done: return ["Nod", "Pose", "Idle"]
-        case .celebrate: return ["Hop", "Pose", "Idle"]
+        case .idle: return ["Idle", "DeepBreath", "Float"]
+        case .working: return ["Charge", "Attack", "Swing", "Walk", "Idle"]
+        case .waiting: return ["LookUp", "Pose", "Sit", "Idle"]
+        case .done: return ["Nod", "Pose", "DeepBreath", "Idle"]
+        case .celebrate: return ["Hop", "Wake", "Pose", "Idle"]
         }
     }
 

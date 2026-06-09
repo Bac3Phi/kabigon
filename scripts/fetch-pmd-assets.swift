@@ -2,13 +2,19 @@
 import AppKit
 
 // Fetches the Kanto starter evolution lines (dex 0001-0009) from PMDCollab's
-// SpriteCollab, slices the south-facing row of each animation per AnimData.xml,
+// SpriteCollab, slices every row of each animation per AnimData.xml,
 // pulls emotion portraits, and writes bundled resources + per-species meta.json
 // under Sources/App/Resources/pmd/. Assets are CC BY-NC (see CREDITS.txt).
 
 let raw = "https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master"
 let dexes = Array(1...9)
-let wantedAnims = ["Idle", "Walk", "Sleep", "Hurt", "Eat", "Pose", "Charge", "Nod", "Hop"]
+let wantedAnims = [
+    "Idle", "Walk", "Sleep", "Hurt", "Eat", "Pose", "Charge", "Nod", "Hop",
+    "Attack", "Shoot", "Shake", "Swing", "Double", "Rotate", "EventSleep", "Wake",
+    "Tumble", "Pain", "Float", "DeepBreath", "Sit", "LookUp", "Sink", "Trip",
+    "Laying", "LeapForth", "Head", "Cringe", "LostBalance", "TumbleBack",
+    "Faint", "HitGround", "Pull",
+]
 let wantedEmotions = [
     "Normal", "Happy", "Sad", "Angry", "Worried", "Determined",
     "Joyous", "Inspired", "Surprised", "Crying", "Pain", "Dizzy",
@@ -56,17 +62,24 @@ func parseAnimData(_ data: Data) -> [String: AnimSpec] {
     return out
 }
 
-/// Slices the south-facing (row 0) frames of a sheet.
-func southRow(_ sheet: CGImage, fw: Int, fh: Int, count: Int) -> [CGImage] {
+/// Slices every row of a PMD animation sheet into directional/pose variants.
+func animationRows(_ sheet: CGImage, fw: Int, fh: Int, count: Int) -> [[CGImage]] {
     guard fw > 0, fh > 0 else { return [] }
     let cols = sheet.width / fw
+    let rows = max(sheet.height / fh, 1)
     let n = min(max(count, 1), cols)
-    var frames: [CGImage] = []
-    for c in 0..<n {
-        let rect = CGRect(x: c * fw, y: 0, width: fw, height: fh)
-        if let cropped = sheet.cropping(to: rect) { frames.append(cropped) }
+    var variants: [[CGImage]] = []
+    for row in 0..<rows {
+        var frames: [CGImage] = []
+        for c in 0..<n {
+            let rect = CGRect(x: c * fw, y: row * fh, width: fw, height: fh)
+            if let cropped = sheet.cropping(to: rect) { frames.append(cropped) }
+        }
+        if !frames.isEmpty {
+            variants.append(frames)
+        }
     }
-    return frames
+    return variants
 }
 
 func jsonString(_ obj: Any) -> String {
@@ -96,17 +109,26 @@ for dex in dexes {
         guard let sheetData = fetch("sprite/\(s)/\(anim)-Anim.png"),
               let sheet = cgImage(sheetData) else { continue }
         let count = spec.durations.isEmpty ? (sheet.width / spec.fw) : spec.durations.count
-        let frames = southRow(sheet, fw: spec.fw, fh: spec.fh, count: count)
-        guard !frames.isEmpty else { continue }
+        let variants = animationRows(sheet, fw: spec.fw, fh: spec.fh, count: count)
+        guard let firstVariant = variants.first, !firstVariant.isEmpty else { continue }
         let clipDir = animDir.appendingPathComponent(anim)
+        try? fm.removeItem(at: clipDir)
         try? fm.createDirectory(at: clipDir, withIntermediateDirectories: true)
-        for (i, frame) in frames.enumerated() {
-            savePNG(frame, to: clipDir.appendingPathComponent("\(i).png"))
+        for (variantIndex, frames) in variants.enumerated() {
+            let variantDir = clipDir.appendingPathComponent("\(variantIndex)")
+            try? fm.createDirectory(at: variantDir, withIntermediateDirectories: true)
+            for (i, frame) in frames.enumerated() {
+                savePNG(frame, to: variantDir.appendingPathComponent("\(i).png"))
+            }
         }
         let durs = spec.durations.isEmpty
-            ? Array(repeating: 4, count: frames.count)
-            : Array(spec.durations.prefix(frames.count))
-        animMeta[anim] = ["frameCount": frames.count, "durations": durs]
+            ? Array(repeating: 4, count: firstVariant.count)
+            : Array(spec.durations.prefix(firstVariant.count))
+        animMeta[anim] = [
+            "frameCount": firstVariant.count,
+            "variantCount": variants.count,
+            "durations": durs,
+        ]
     }
 
     var emotions: [String] = []

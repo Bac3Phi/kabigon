@@ -160,12 +160,13 @@ final class PetController: ObservableObject {
     /// to agent context.
     func reactToPet() {
         let reactions: [(PetEmotion, String, String, [String])] = [
-            (.happy, "heart.fill", "That feels nice!", ["Nod", "Pose", "Idle"]),
-            (.joyous, "sparkles", "More cuddles!", ["Hop", "Pose", "Idle"]),
-            (.surprised, "exclamationmark.bubble.fill", "Oh! You surprised me!", ["Hurt", "Pose", "Idle"]),
-            (.inspired, "lightbulb.fill", "I feel energized!", ["Charge", "Pose", "Idle"]),
-            (.dizzy, "tornado", "Hehe, easy there!", ["Spin", "Hurt", "Idle"]),
-            (.determined, "bolt.heart.fill", "We're a great team!", ["Attack", "Charge", "Idle"]),
+            (.happy, "heart.fill", "That feels nice!", ["Nod", "Sit", "Pose", "Idle"]),
+            (.joyous, "sparkles", "More cuddles!", ["Hop", "Float", "Pose", "Idle"]),
+            (.surprised, "exclamationmark.bubble.fill", "Oh! You surprised me!", ["Wake", "Hurt", "Pose", "Idle"]),
+            (.inspired, "lightbulb.fill", "I feel energized!", ["Charge", "DeepBreath", "Pose", "Idle"]),
+            (.dizzy, "tornado", "Hehe, easy there!", ["Rotate", "Tumble", "Hurt", "Idle"]),
+            (.determined, "bolt.heart.fill", "We're a great team!", ["Attack", "Swing", "Charge", "Idle"]),
+            (.sad, "bandage.fill", "Oof, dramatic landing!", ["HitGround", "Pain", "Idle"]),
         ]
         guard let reaction = reactions.randomElement() else { return }
         presentReaction(
@@ -180,7 +181,7 @@ final class PetController: ObservableObject {
             emotion: .surprised,
             symbol: "sparkles",
             message: "Look! A wild \(name) appeared at Lv \(level)!",
-            animationNames: ["Hop", "Pose", "Nod", "Idle"],
+            animationNames: ["Hop", "Wake", "LookUp", "Pose", "Nod", "Idle"],
             duration: 3.2
         )
     }
@@ -192,7 +193,7 @@ final class PetController: ObservableObject {
             emotion: .inspired,
             symbol: "calendar.badge.clock",
             message: message,
-            animationNames: ["Nod", "Pose", "Hop", "Idle"],
+            animationNames: ["Nod", "LookUp", "Pose", "Hop", "Idle"],
             duration: 5.0
         )
     }

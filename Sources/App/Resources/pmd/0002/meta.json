@@ -1,5 +1,20 @@
 {
   "anims" : {
+    "Attack" : {
+      "durations" : [
+        4,
+        2,
+        4,
+        2,
+        2,
+        2,
+        2,
+        2,
+        4
+      ],
+      "frameCount" : 9,
+      "variantCount" : 8
+    },
     "Charge" : {
       "durations" : [
         2,
@@ -13,7 +28,30 @@
         2,
         2
       ],
-      "frameCount" : 10
+      "frameCount" : 10,
+      "variantCount" : 8
+    },
+    "Double" : {
+      "durations" : [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        2,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "frameCount" : 16,
+      "variantCount" : 8
     },
     "Hop" : {
       "durations" : [
@@ -28,14 +66,16 @@
         1,
         2
       ],
-      "frameCount" : 10
+      "frameCount" : 10,
+      "variantCount" : 8
     },
     "Hurt" : {
       "durations" : [
         2,
         8
       ],
-      "frameCount" : 2
+      "frameCount" : 2,
+      "variantCount" : 8
     },
     "Idle" : {
       "durations" : [
@@ -44,14 +84,70 @@
         12,
         12
       ],
-      "frameCount" : 4
+      "frameCount" : 4,
+      "variantCount" : 8
+    },
+    "Rotate" : {
+      "durations" : [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "frameCount" : 9,
+      "variantCount" : 8
+    },
+    "Shake" : {
+      "durations" : [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "frameCount" : 6,
+      "variantCount" : 8
+    },
+    "Shoot" : {
+      "durations" : [
+        12,
+        4,
+        4,
+        4,
+        2,
+        2
+      ],
+      "frameCount" : 6,
+      "variantCount" : 8
     },
     "Sleep" : {
       "durations" : [
         30,
         35
       ],
-      "frameCount" : 2
+      "frameCount" : 2,
+      "variantCount" : 1
+    },
+    "Swing" : {
+      "durations" : [
+        2,
+        1,
+        2,
+        2,
+        3,
+        2,
+        2,
+        1,
+        1
+      ],
+      "frameCount" : 9,
+      "variantCount" : 8
     },
     "Walk" : {
       "durations" : [
@@ -60,7 +156,8 @@
         8,
         10
       ],
-      "frameCount" : 4
+      "frameCount" : 4,
+      "variantCount" : 8
     }
   },
   "dex" : 2,

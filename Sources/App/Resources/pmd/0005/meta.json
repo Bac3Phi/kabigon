@@ -1,5 +1,25 @@
 {
   "anims" : {
+    "Attack" : {
+      "durations" : [
+        2,
+        2,
+        2,
+        2,
+        4,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "frameCount" : 14,
+      "variantCount" : 8
+    },
     "Charge" : {
       "durations" : [
         2,
@@ -13,7 +33,53 @@
         2,
         2
       ],
-      "frameCount" : 10
+      "frameCount" : 10,
+      "variantCount" : 8
+    },
+    "Cringe" : {
+      "durations" : [
+        2,
+        8
+      ],
+      "frameCount" : 2,
+      "variantCount" : 1
+    },
+    "DeepBreath" : {
+      "durations" : [
+        12,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        10,
+        4
+      ],
+      "frameCount" : 9,
+      "variantCount" : 1
+    },
+    "Double" : {
+      "durations" : [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        2,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "frameCount" : 16,
+      "variantCount" : 8
     },
     "Eat" : {
       "durations" : [
@@ -22,7 +88,57 @@
         6,
         8
       ],
-      "frameCount" : 4
+      "frameCount" : 4,
+      "variantCount" : 1
+    },
+    "EventSleep" : {
+      "durations" : [
+        30,
+        35
+      ],
+      "frameCount" : 2,
+      "variantCount" : 8
+    },
+    "Faint" : {
+      "durations" : [
+        8,
+        12,
+        4,
+        10
+      ],
+      "frameCount" : 4,
+      "variantCount" : 8
+    },
+    "Float" : {
+      "durations" : [
+        9,
+        18,
+        9,
+        14
+      ],
+      "frameCount" : 4,
+      "variantCount" : 8
+    },
+    "Head" : {
+      "durations" : [
+        4
+      ],
+      "frameCount" : 1,
+      "variantCount" : 8
+    },
+    "HitGround" : {
+      "durations" : [
+        4,
+        4,
+        4,
+        4,
+        4,
+        6,
+        4,
+        4
+      ],
+      "frameCount" : 8,
+      "variantCount" : 1
     },
     "Hop" : {
       "durations" : [
@@ -37,14 +153,16 @@
         1,
         2
       ],
-      "frameCount" : 10
+      "frameCount" : 10,
+      "variantCount" : 8
     },
     "Hurt" : {
       "durations" : [
         2,
         8
       ],
-      "frameCount" : 2
+      "frameCount" : 2,
+      "variantCount" : 8
     },
     "Idle" : {
       "durations" : [
@@ -55,7 +173,43 @@
         3,
         2
       ],
-      "frameCount" : 6
+      "frameCount" : 6,
+      "variantCount" : 8
+    },
+    "Laying" : {
+      "durations" : [
+        12
+      ],
+      "frameCount" : 1,
+      "variantCount" : 8
+    },
+    "LeapForth" : {
+      "durations" : [
+        6,
+        1,
+        1,
+        2,
+        2,
+        2
+      ],
+      "frameCount" : 6,
+      "variantCount" : 1
+    },
+    "LookUp" : {
+      "durations" : [
+        6,
+        6
+      ],
+      "frameCount" : 2,
+      "variantCount" : 1
+    },
+    "LostBalance" : {
+      "durations" : [
+        8,
+        8
+      ],
+      "frameCount" : 2,
+      "variantCount" : 1
     },
     "Nod" : {
       "durations" : [
@@ -63,7 +217,26 @@
         8,
         6
       ],
-      "frameCount" : 3
+      "frameCount" : 3,
+      "variantCount" : 8
+    },
+    "Pain" : {
+      "durations" : [
+        4,
+        1,
+        1,
+        1,
+        2,
+        1,
+        4,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "frameCount" : 12,
+      "variantCount" : 8
     },
     "Pose" : {
       "durations" : [
@@ -71,14 +244,156 @@
         2,
         8
       ],
-      "frameCount" : 3
+      "frameCount" : 3,
+      "variantCount" : 8
+    },
+    "Pull" : {
+      "durations" : [
+        10,
+        12,
+        10,
+        12,
+        10,
+        12,
+        10
+      ],
+      "frameCount" : 7,
+      "variantCount" : 1
+    },
+    "Rotate" : {
+      "durations" : [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "frameCount" : 9,
+      "variantCount" : 8
+    },
+    "Shoot" : {
+      "durations" : [
+        2,
+        2,
+        4,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "frameCount" : 12,
+      "variantCount" : 8
+    },
+    "Sink" : {
+      "durations" : [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "frameCount" : 12,
+      "variantCount" : 1
+    },
+    "Sit" : {
+      "durations" : [
+        8,
+        8,
+        8
+      ],
+      "frameCount" : 3,
+      "variantCount" : 1
     },
     "Sleep" : {
       "durations" : [
         30,
         35
       ],
-      "frameCount" : 2
+      "frameCount" : 2,
+      "variantCount" : 1
+    },
+    "Swing" : {
+      "durations" : [
+        2,
+        1,
+        2,
+        2,
+        3,
+        2,
+        2,
+        1,
+        1
+      ],
+      "frameCount" : 9,
+      "variantCount" : 8
+    },
+    "Trip" : {
+      "durations" : [
+        4,
+        6,
+        4,
+        4,
+        4
+      ],
+      "frameCount" : 5,
+      "variantCount" : 8
+    },
+    "Tumble" : {
+      "durations" : [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "frameCount" : 8,
+      "variantCount" : 1
+    },
+    "TumbleBack" : {
+      "durations" : [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "frameCount" : 10,
+      "variantCount" : 1
+    },
+    "Wake" : {
+      "durations" : [
+        8,
+        6,
+        8,
+        8,
+        10
+      ],
+      "frameCount" : 5,
+      "variantCount" : 8
     },
     "Walk" : {
       "durations" : [
@@ -87,7 +402,8 @@
         8,
         10
       ],
-      "frameCount" : 4
+      "frameCount" : 4,
+      "variantCount" : 8
     }
   },
   "dex" : 5,

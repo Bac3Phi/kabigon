@@ -7,7 +7,13 @@ import KabigonCore
 /// shipping every supported sprite set inside the app.
 enum PMDAssetDownloader {
     private static let raw = "https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master"
-    private static let wantedAnims = ["Idle", "Walk", "Sleep", "Hurt", "Eat", "Pose", "Charge", "Nod", "Hop"]
+    private static let wantedAnims = [
+        "Idle", "Walk", "Sleep", "Hurt", "Eat", "Pose", "Charge", "Nod", "Hop",
+        "Attack", "Shoot", "Shake", "Swing", "Double", "Rotate", "EventSleep", "Wake",
+        "Tumble", "Pain", "Float", "DeepBreath", "Sit", "LookUp", "Sink", "Trip",
+        "Laying", "LeapForth", "Head", "Cringe", "LostBalance", "TumbleBack",
+        "Faint", "HitGround", "Pull",
+    ]
     private static let wantedEmotions = [
         "Normal", "Happy", "Sad", "Angry", "Worried", "Determined",
         "Joyous", "Inspired", "Surprised", "Crying", "Pain", "Dizzy",
@@ -24,8 +30,8 @@ enum PMDAssetDownloader {
 
     /// True once a usable `meta.json` exists on disk for this species.
     static func isCached(dex: Int) -> Bool {
-        FileManager.default.fileExists(
-            atPath: cacheDir(dex: dex).appendingPathComponent("meta.json").path)
+        let meta = cacheDir(dex: dex).appendingPathComponent("meta.json")
+        return FileManager.default.fileExists(atPath: meta.path) && hasModernMeta(meta)
     }
 
     /// Fetches, slices, and writes a species. Returns true on success. Safe to
@@ -52,17 +58,26 @@ enum PMDAssetDownloader {
                   let sheetData = await fetch("sprite/\(slug)/\(anim)-Anim.png"),
                   let sheet = cgImage(sheetData) else { continue }
             let count = spec.durations.isEmpty ? (sheet.width / max(spec.fw, 1)) : spec.durations.count
-            let frames = southRow(sheet, fw: spec.fw, fh: spec.fh, count: count)
-            guard !frames.isEmpty else { continue }
+            let variants = animationRows(sheet, fw: spec.fw, fh: spec.fh, count: count)
+            guard let firstVariant = variants.first, !firstVariant.isEmpty else { continue }
             let clipDir = animDir.appendingPathComponent(anim)
+            try? fm.removeItem(at: clipDir)
             try? fm.createDirectory(at: clipDir, withIntermediateDirectories: true)
-            for (i, frame) in frames.enumerated() {
-                savePNG(frame, to: clipDir.appendingPathComponent("\(i).png"))
+            for (variantIndex, frames) in variants.enumerated() {
+                let variantDir = clipDir.appendingPathComponent("\(variantIndex)")
+                try? fm.createDirectory(at: variantDir, withIntermediateDirectories: true)
+                for (i, frame) in frames.enumerated() {
+                    savePNG(frame, to: variantDir.appendingPathComponent("\(i).png"))
+                }
             }
             let durs = spec.durations.isEmpty
-                ? Array(repeating: 4, count: frames.count)
-                : Array(spec.durations.prefix(frames.count))
-            animMeta[anim] = ["frameCount": frames.count, "durations": durs]
+                ? Array(repeating: 4, count: firstVariant.count)
+                : Array(spec.durations.prefix(firstVariant.count))
+            animMeta[anim] = [
+                "frameCount": firstVariant.count,
+                "variantCount": variants.count,
+                "durations": durs,
+            ]
         }
         guard !animMeta.isEmpty else { return false }
 
@@ -103,6 +118,15 @@ enum PMDAssetDownloader {
         }
     }
 
+    private static func hasModernMeta(_ url: URL) -> Bool {
+        guard let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let anims = json["anims"] as? [String: Any] else { return false }
+        return anims.values.contains { anim in
+            (anim as? [String: Any])?["variantCount"] != nil
+        }
+    }
+
     private struct AnimSpec { let fw: Int; let fh: Int; let durations: [Int] }
 
     private static func parseAnimData(_ data: Data) -> [String: AnimSpec]? {
@@ -122,15 +146,22 @@ enum PMDAssetDownloader {
         return out
     }
 
-    private static func southRow(_ sheet: CGImage, fw: Int, fh: Int, count: Int) -> [CGImage] {
+    private static func animationRows(_ sheet: CGImage, fw: Int, fh: Int, count: Int) -> [[CGImage]] {
         guard fw > 0, fh > 0 else { return [] }
         let cols = sheet.width / fw
+        let rows = max(sheet.height / fh, 1)
         let n = min(max(count, 1), cols)
-        var frames: [CGImage] = []
-        for c in 0..<n {
-            let rect = CGRect(x: c * fw, y: 0, width: fw, height: fh)
-            if let cropped = sheet.cropping(to: rect) { frames.append(cropped) }
+        var variants: [[CGImage]] = []
+        for row in 0..<rows {
+            var frames: [CGImage] = []
+            for c in 0..<n {
+                let rect = CGRect(x: c * fw, y: row * fh, width: fw, height: fh)
+                if let cropped = sheet.cropping(to: rect) { frames.append(cropped) }
+            }
+            if !frames.isEmpty {
+                variants.append(frames)
+            }
         }
-        return frames
+        return variants
     }
 }

@@ -9,10 +9,10 @@ enum WorkingVisualStyle: Equatable {
 
     var animationNames: [String] {
         switch self {
-        case .thinking: return ["Pose", "Idle"]
-        case .searching: return ["Walk", "Charge", "Idle"]
-        case .testing: return ["Nod", "Pose", "Idle"]
-        case .executing: return ["Charge", "Attack", "Walk", "Idle"]
+        case .thinking: return ["DeepBreath", "LookUp", "Pose", "Idle"]
+        case .searching: return ["Walk", "LookUp", "Float", "Idle"]
+        case .testing: return ["Nod", "Sit", "Pose", "Idle"]
+        case .executing: return ["Attack", "Swing", "Double", "Charge", "Walk", "Idle"]
         }
     }
 
