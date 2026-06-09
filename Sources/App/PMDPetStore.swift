@@ -192,7 +192,7 @@ enum PMDMoodMap {
     static func animNames(for mood: PetMood) -> [String] {
         switch mood {
         case .idle: return ["Idle", "DeepBreath", "Float"]
-        case .working: return ["Charge", "Attack", "Swing", "Walk", "Idle"]
+        case .working: return ["Charge", "Walk", "Pose", "Idle"]
         case .waiting: return ["LookUp", "Pose", "Sit", "Idle"]
         case .done: return ["Nod", "Pose", "DeepBreath", "Idle"]
         case .celebrate: return ["Hop", "Wake", "Pose", "Idle"]

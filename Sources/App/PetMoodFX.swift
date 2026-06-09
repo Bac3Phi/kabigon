@@ -9,10 +9,10 @@ enum WorkingVisualStyle: Equatable {
 
     var animationNames: [String] {
         switch self {
-        case .thinking: return ["DeepBreath", "LookUp", "Pose", "Idle"]
-        case .searching: return ["Walk", "LookUp", "Float", "Idle"]
-        case .testing: return ["Nod", "Sit", "Pose", "Idle"]
-        case .executing: return ["Attack", "Swing", "Double", "Charge", "Walk", "Idle"]
+        case .thinking: return ["DeepBreath", "Pose", "Idle"]
+        case .searching: return ["Walk", "LookUp", "Pose", "Idle"]
+        case .testing: return ["Nod", "Pose", "Idle"]
+        case .executing: return ["Charge", "Walk", "Pose", "Idle"]
         }
     }
 
@@ -42,16 +42,16 @@ struct PetMotion {
                 return PetMotion(offsetY: breath * 1.5, rotation: sin(t * 1.4) * 2.5,
                                  scaleX: 1 + 0.015 * breath, scaleY: 1 - 0.015 * breath)
             case .searching:
-                return PetMotion(offsetY: -abs(sin(t * 4.2)) * 3, rotation: sin(t * 3.1) * 3,
+                return PetMotion(offsetY: -abs(sin(t * 3.4)) * 1.8, rotation: sin(t * 2.6) * 1.8,
                                  scaleX: 1, scaleY: 1)
             case .testing:
-                let pulse = abs(sin(t * 3.4))
-                return PetMotion(offsetY: -pulse * 2.5, rotation: 0,
-                                 scaleX: 1 + pulse * 0.025, scaleY: 1 - pulse * 0.025)
+                let pulse = abs(sin(t * 2.8))
+                return PetMotion(offsetY: -pulse * 1.4, rotation: 0,
+                                 scaleX: 1 + pulse * 0.018, scaleY: 1 - pulse * 0.018)
             case .executing:
-                let stride = abs(sin(t * 6.5))
-                return PetMotion(offsetY: -stride * 4, rotation: sin(t * 13) * 1.8,
-                                 scaleX: 1 + 0.02 * (1 - stride), scaleY: 1 - 0.02 * (1 - stride))
+                let stride = abs(sin(t * 4.4))
+                return PetMotion(offsetY: -stride * 1.8, rotation: sin(t * 5.8) * 1.1,
+                                 scaleX: 1 + 0.015 * (1 - stride), scaleY: 1 - 0.015 * (1 - stride))
             }
         case .waiting:
             return PetMotion(offsetY: sin(t * 2.6) * 1.5, rotation: sin(t * 2.6) * 7, scaleX: 1, scaleY: 1)

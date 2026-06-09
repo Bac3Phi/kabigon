@@ -52,7 +52,8 @@ struct PetView: View {
                 size: size,
                 preferredAnimNames: pet.petReaction?.animationNames
                     ?? (pet.mood == .working ? pet.workingVisualStyle.animationNames : nil),
-                workingStyle: pet.mood == .working ? pet.workingVisualStyle : nil
+                workingStyle: pet.mood == .working ? pet.workingVisualStyle : nil,
+                isReactionAnimation: pet.petReaction != nil
             )
         } else {
             Image(systemName: "pawprint.fill")

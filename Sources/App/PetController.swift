@@ -44,18 +44,26 @@ final class PetController: ObservableObject {
     }
     var windowSize: CGSize { Self.windowSize(forPoint: petPoint) }
 
-    private var lastResolved: PetMood = .idle
     private var latestSessions: [AgentSession] = []
     private var celebrateTimer: Timer?
     private var chatTimer: Timer?
     private var chatHideTimer: Timer?
     private var petReactionTimer: Timer?
+    private var moodTransitionTimer: Timer?
+    private var pendingMood: PetMood?
+    private var pendingMoodSince: Date?
+    private var moodEnteredAt = Date()
+    private var workingStyleEnteredAt = Date()
+    private var pendingWorkingStyle: WorkingVisualStyle?
+    private var pendingWorkingStyleSince: Date?
 
     private static let petKey = "agentpet.selectedPetID"
     private static let chatKey = "agentpet.showChat"
     private static let sizeKey = "agentpet.petSize"
     private static let celebrateDuration: TimeInterval = 3
     private static let chatDisplayDuration: TimeInterval = 4
+    private static let workingStyleDebounce: TimeInterval = 0.9
+    private static let minimumWorkingStyleDwell: TimeInterval = 2.4
 
     init() {
         selectedPetID = UserDefaults.standard.string(forKey: Self.petKey)
@@ -101,36 +109,126 @@ final class PetController: ObservableObject {
     func update(sessions: [AgentSession]) {
         latestSessions = sessions
         let resolved = MoodResolver.aggregate(sessions)
-        defer { lastResolved = resolved }
 
-        if resolved == .done && lastResolved != .done {
-            setMood(.celebrate)
+        if mood == .celebrate {
+            if resolved == .waiting {
+                celebrateTimer?.invalidate()
+                requestMood(.waiting, force: true)
+            }
+            if resolved != .done {
+                requestMood(resolved)
+            }
+            return
+        }
+
+        requestMood(resolved)
+    }
+
+    private func requestMood(_ target: PetMood, force: Bool = false) {
+        if target == mood {
+            clearPendingMood()
+            updateMoodDetails(for: target, force: false)
+            return
+        }
+
+        if force {
+            clearPendingMood()
+            applyResolvedMood(target)
+            return
+        }
+
+        if pendingMood != target {
+            pendingMood = target
+            pendingMoodSince = Date()
+        }
+        scheduleMoodTransitionCheck()
+    }
+
+    private func settleAfterCelebrate() {
+        clearPendingMood()
+        applyResolvedMood(MoodResolver.aggregate(latestSessions), announce: false, allowCelebrate: false)
+    }
+
+    private func scheduleMoodTransitionCheck(after delay: TimeInterval = 0.15) {
+        moodTransitionTimer?.invalidate()
+        moodTransitionTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { _ in
+            Task { @MainActor [weak self] in self?.attemptMoodTransition() }
+        }
+    }
+
+    private func attemptMoodTransition() {
+        guard let target = pendingMood, let since = pendingMoodSince else { return }
+        let now = Date()
+        let stableFor = now.timeIntervalSince(since)
+        let heldFor = now.timeIntervalSince(moodEnteredAt)
+        let requiredStable = debounceDuration(for: target)
+        let requiredHold = minimumDwellDuration(from: mood, to: target)
+
+        guard stableFor >= requiredStable, heldFor >= requiredHold else {
+            let remaining = max(requiredStable - stableFor, requiredHold - heldFor, 0.12)
+            scheduleMoodTransitionCheck(after: min(remaining, 1.0))
+            return
+        }
+
+        clearPendingMood()
+        applyResolvedMood(target)
+    }
+
+    private func clearPendingMood() {
+        moodTransitionTimer?.invalidate()
+        moodTransitionTimer = nil
+        pendingMood = nil
+        pendingMoodSince = nil
+    }
+
+    private func debounceDuration(for target: PetMood) -> TimeInterval {
+        switch target {
+        case .waiting: return 0.25
+        case .working: return 0.45
+        case .done: return 1.0
+        case .idle: return 1.8
+        case .celebrate: return 0
+        }
+    }
+
+    private func minimumDwellDuration(from current: PetMood, to target: PetMood) -> TimeInterval {
+        if target == .waiting { return min(baseDwellDuration(for: current), 0.6) }
+        return baseDwellDuration(for: current)
+    }
+
+    private func baseDwellDuration(for mood: PetMood) -> TimeInterval {
+        switch mood {
+        case .working: return 1.6
+        case .waiting: return 1.2
+        case .done: return 3.0
+        case .idle: return 1.4
+        case .celebrate: return Self.celebrateDuration
+        }
+    }
+
+    private func applyResolvedMood(
+        _ newMood: PetMood,
+        announce: Bool = true,
+        allowCelebrate: Bool = true
+    ) {
+        if allowCelebrate, newMood == .done, mood != .done {
+            setMood(.celebrate, announce: announce)
             celebrateTimer?.invalidate()
             celebrateTimer = Timer.scheduledTimer(withTimeInterval: Self.celebrateDuration, repeats: false) { _ in
                 Task { @MainActor [weak self] in self?.settleAfterCelebrate() }
             }
             return
         }
-        if mood == .celebrate && resolved == .done {
-            return  // let the celebration finish
-        }
-        celebrateTimer?.invalidate()
-        setMood(resolved)
-    }
 
-    private func settleAfterCelebrate() {
-        setMood(MoodResolver.aggregate(latestSessions), announce: false)
+        celebrateTimer?.invalidate()
+        setMood(newMood, announce: announce)
     }
 
     private func setMood(_ newMood: PetMood, announce: Bool = true) {
         let changed = mood != newMood
         mood = newMood
-        if newMood == .working {
-            workingVisualStyle = resolveWorkingVisualStyle(message: representativeMessage(for: newMood))
-        }
-        if petReactionTimer == nil {
-            emotion = EmotionResolver.resolve(mood: newMood, message: representativeMessage(for: newMood))
-        }
+        if changed { moodEnteredAt = Date() }
+        updateMoodDetails(for: newMood, force: changed)
         if changed {
             if announce {
                 refreshChat()
@@ -139,6 +237,45 @@ final class PetController: ObservableObject {
             }
             scheduleNextChat()
         }
+    }
+
+    private func updateMoodDetails(for mood: PetMood, force: Bool) {
+        if mood == .working {
+            updateWorkingVisualStyle(force: force)
+        } else {
+            pendingWorkingStyle = nil
+            pendingWorkingStyleSince = nil
+        }
+        if petReactionTimer == nil {
+            emotion = EmotionResolver.resolve(mood: mood, message: representativeMessage(for: mood))
+        }
+    }
+
+    private func updateWorkingVisualStyle(force: Bool) {
+        let next = resolveWorkingVisualStyle(message: representativeMessage(for: .working))
+        if force || workingVisualStyle == next {
+            pendingWorkingStyle = nil
+            pendingWorkingStyleSince = nil
+            if force { workingStyleEnteredAt = Date() }
+            if workingVisualStyle != next {
+                workingVisualStyle = next
+            }
+            return
+        }
+
+        let now = Date()
+        if pendingWorkingStyle != next {
+            pendingWorkingStyle = next
+            pendingWorkingStyleSince = now
+            return
+        }
+        guard let since = pendingWorkingStyleSince else { return }
+        guard now.timeIntervalSince(since) >= Self.workingStyleDebounce,
+              now.timeIntervalSince(workingStyleEnteredAt) >= Self.minimumWorkingStyleDwell else { return }
+        workingVisualStyle = next
+        workingStyleEnteredAt = now
+        pendingWorkingStyle = nil
+        pendingWorkingStyleSince = nil
     }
 
     private func resolveWorkingVisualStyle(message: String?) -> WorkingVisualStyle {
