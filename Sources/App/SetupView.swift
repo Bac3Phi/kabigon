@@ -645,8 +645,7 @@ private struct CaughtPokemonCard: View {
         VStack(spacing: 4) {
             Group {
                 if let sprite {
-                    Image(nsImage: sprite)
-                        .resizable().interpolation(.none).scaledToFit()
+                    PMDThumbnailView(image: sprite, targetWidth: 34, maxHeight: 40)
                 } else if isLoading {
                     ProgressView().controlSize(.small)
                 } else if didFail {

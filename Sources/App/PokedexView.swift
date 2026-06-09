@@ -78,8 +78,7 @@ private struct PokedexCell: View {
         VStack(spacing: 4) {
             ZStack {
                 if entry != nil, let image = idleFrame {
-                    Image(nsImage: image)
-                        .resizable().interpolation(.none).scaledToFit()
+                    PMDThumbnailView(image: image, targetWidth: 44, maxHeight: 52)
                 } else if entry != nil, isLoading {
                     ProgressView().controlSize(.small)
                 } else if entry != nil, didFail {
