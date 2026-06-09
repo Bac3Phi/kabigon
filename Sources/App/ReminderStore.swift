@@ -117,7 +117,7 @@ final class ReminderStore: ObservableObject {
         guard NotificationManager.shared.isAvailable else { return }
         let ids = reminders.map(\.notificationIdentifier)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
-        reminders.forEach(schedule)
+        reminders.forEach { schedule($0) }
     }
 
     private func schedule(_ reminder: ReminderItem) {
@@ -147,7 +147,11 @@ final class ReminderStore: ObservableObject {
             content: content,
             trigger: trigger
         )
-        UNUserNotificationCenter.current().add(request)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error {
+                print("Failed to schedule Kabigon reminder: \(error)")
+            }
+        }
     }
 
     private func load() {
