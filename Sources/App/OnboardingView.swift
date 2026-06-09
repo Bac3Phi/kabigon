@@ -37,8 +37,12 @@ struct OnboardingView: View {
         .noFocusRing()
         .onAppear {
             model.refresh()
-            // Pre-load only the three starters; the rest unlock later.
             PMDCatalog.starterDexes.forEach { pmdStore.preload($0) }
+            Task { @MainActor in
+                for dex in PMDCatalog.starterDexes {
+                    await pmdStore.ensureLoaded(dex: dex)
+                }
+            }
         }
     }
 
@@ -119,7 +123,7 @@ struct OnboardingView: View {
     }
 }
 
-/// A reusable grid of the three starter species.
+/// A reusable grid of starter species.
 struct SpeciesPickerGrid: View {
     let selectedDex: Int
     let onSelect: (Int) -> Void
@@ -135,12 +139,19 @@ struct SpeciesPickerGrid: View {
                     dex: dex,
                     species: species,
                     loaded: pmdStore.loaded(dex: dex),
+                    isLoading: pmdStore.isLoading(dex: dex),
+                    didFail: pmdStore.didFail(dex: dex),
                     isSelected: selectedDex == dex
                 )
                 .onTapGesture { onSelect(dex) }
             }
         }
         .onAppear { PMDCatalog.starterDexes.forEach { pmdStore.preload($0) } }
+        .task {
+            for dex in PMDCatalog.starterDexes {
+                await pmdStore.ensureLoaded(dex: dex)
+            }
+        }
     }
 }
 
@@ -149,6 +160,8 @@ struct SpeciesCard: View {
     let dex: Int
     let species: PMDSpecies?
     let loaded: PMDLoadedSpecies?
+    let isLoading: Bool
+    let didFail: Bool
     let isSelected: Bool
 
     var body: some View {
@@ -156,6 +169,11 @@ struct SpeciesCard: View {
             ZStack {
                 if let loaded {
                     PMDSpriteView(species: loaded, mood: .idle, size: 72)
+                } else if isLoading {
+                    ProgressView().controlSize(.small)
+                } else if didFail {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 24)).foregroundStyle(.yellow.opacity(0.8))
                 } else {
                     Image(systemName: "pawprint.fill")
                         .font(.system(size: 28)).foregroundStyle(.white.opacity(0.3))

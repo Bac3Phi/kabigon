@@ -17,6 +17,7 @@ struct KabigonApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        guard !InstallLocationController.moveToApplicationsIfNeeded() else { return }
         // Pre-load the three Kanto starter species so the onboarding picker
         // and the floating pet are ready immediately.
         PMDCatalog.starterDexes.forEach { PMDPetStore.shared.preload($0) }
@@ -30,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ProgressStore.shared.syncStarterToPokedex()
         EncounterManager.shared.start()
         SettingsModel.shared.migrateInstalledHooksIfNeeded()
+        ReminderStore.shared.start()
         _ = UpdaterController.shared
         StatusBarController.shared.start()
         SettingsWindowController.shared.showOnFirstLaunch()

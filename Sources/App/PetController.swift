@@ -302,7 +302,7 @@ enum PetChat {
 
 enum PokemonDialogue {
     static func lines(for dex: Int, mood: PetMood) -> [String] {
-        let name = Gen1Pokedex.name(for: dex) ?? "buddy"
+        let name = PokemonPokedex.name(for: dex) ?? "buddy"
         let species = speciesLines(for: dex)
         switch mood {
         case .idle:
@@ -405,10 +405,10 @@ enum PokemonDialogue {
             )
         default:
             return (
-                ["\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") stays close.", "\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") watches your work."],
-                ["\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") focuses with you.", "\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") keeps pace."],
-                ["\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") looks pleased.", "\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") relaxes."],
-                ["\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") celebrates with you.", "\(Gen1Pokedex.name(for: dex) ?? "This Pokémon") looks thrilled."]
+                ["\(PokemonPokedex.name(for: dex) ?? "This Pokémon") stays close.", "\(PokemonPokedex.name(for: dex) ?? "This Pokémon") watches your work."],
+                ["\(PokemonPokedex.name(for: dex) ?? "This Pokémon") focuses with you.", "\(PokemonPokedex.name(for: dex) ?? "This Pokémon") keeps pace."],
+                ["\(PokemonPokedex.name(for: dex) ?? "This Pokémon") looks pleased.", "\(PokemonPokedex.name(for: dex) ?? "This Pokémon") relaxes."],
+                ["\(PokemonPokedex.name(for: dex) ?? "This Pokémon") celebrates with you.", "\(PokemonPokedex.name(for: dex) ?? "This Pokémon") looks thrilled."]
             )
         }
     }

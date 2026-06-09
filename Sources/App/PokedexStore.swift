@@ -1,7 +1,7 @@
 import Foundation
 import KabigonCore
 
-/// Owns the player's Pokédex: which Gen-1 species have been caught, each one's
+/// Owns the player's Pokédex: which supported species have been caught, each one's
 /// level, and the NEW flag for freshly discovered species. Persists to
 /// Kabigon's Application Support directory so collection progress survives across launches.
 @MainActor
@@ -20,7 +20,7 @@ final class PokedexStore: ObservableObject {
     /// Records a caught/seen species, or bumps its level if already owned, and
     /// persists the change.
     func register(dex: Int, level: Int, isNew: Bool) {
-        guard Gen1Pokedex.dexRange.contains(dex) else { return }
+        guard PokemonPokedex.dexRange.contains(dex) else { return }
         data.upsert(dex: dex, level: max(level, 1), isNew: isNew)
         data.save()
     }

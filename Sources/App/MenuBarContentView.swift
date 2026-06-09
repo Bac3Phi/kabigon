@@ -124,7 +124,7 @@ struct MenuContentView: View {
                 Image(systemName: "books.vertical.fill")
                     .foregroundStyle(.white.opacity(0.8)).frame(width: 16)
                 Text("Pokédex").font(.system(size: 13)).foregroundStyle(.white)
-                Text("\(pokedex.caughtCount)/\(Gen1Pokedex.count)")
+                Text("\(pokedex.caughtCount)/\(PokemonPokedex.count)")
                     .font(.system(size: 11)).foregroundStyle(.white.opacity(0.5))
                 Spacer()
                 if pokedex.newCount > 0 {
@@ -184,6 +184,12 @@ struct MenuContentView: View {
     private var controls: some View {
         VStack(spacing: 0) {
             controlRow(icon: "pawprint", label: "Show pet", isOn: $petWindow.isVisible)
+            actionRow(icon: "arrow.triangle.2.circlepath.circle", label: "Change Pokémon") {
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    SettingsWindowController.shared.show(initialTab: .pet)
+                }
+            }
             controlRow(icon: "number", label: "Show count on menu bar", isOn: $statusBar.showCount)
             controlRow(icon: "bubble.left", label: "Show chat on menu bar", isOn: $statusBar.showChatOnMenuBar)
             sizeRow
@@ -212,6 +218,22 @@ struct MenuContentView: View {
         .padding(.horizontal, 14).padding(.vertical, 8)
     }
 
+    private func actionRow(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon).foregroundStyle(.white.opacity(0.8)).frame(width: 16)
+                Text(label).font(.system(size: 13)).foregroundStyle(.white)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.35))
+            }
+            .padding(.horizontal, 14).padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: Footer
 
     private var footer: some View {
@@ -230,9 +252,11 @@ struct MenuContentView: View {
                     UpdaterController.shared.checkForUpdates()
                 }
             }
+#if DEBUG
             FooterButton(icon: "ant", label: "Spawn") {
                 EncounterManager.shared.triggerRandomEncounter()
             }
+#endif
             Spacer()
             FooterButton(icon: "power", label: "Quit") {
                 NSApplication.shared.terminate(nil)

@@ -11,8 +11,9 @@ final class UpdaterController: NSObject, ObservableObject {
     private let controller: SPUStandardUpdaterController
 
     override init() {
-        // startingUpdater: true wires automatic background checks immediately.
-        controller = SPUStandardUpdaterController(startingUpdater: true,
+        // Only start Sparkle when the running bundle can be replaced. Otherwise
+        // Sparkle shows its own translocation/DMG error during update checks.
+        controller = SPUStandardUpdaterController(startingUpdater: InstallLocationController.canInstallUpdates,
                                                   updaterDelegate: nil,
                                                   userDriverDelegate: nil)
         super.init()
@@ -20,6 +21,10 @@ final class UpdaterController: NSObject, ObservableObject {
 
     /// User-initiated check (shows "you're up to date" if nothing is newer).
     func checkForUpdates() {
+        guard InstallLocationController.canInstallUpdates else {
+            InstallLocationController.showUpdatesUnavailableAlert()
+            return
+        }
         controller.updater.checkForUpdates()
     }
 }

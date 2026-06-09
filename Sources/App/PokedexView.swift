@@ -1,7 +1,7 @@
 import SwiftUI
 import KabigonCore
 
-/// The collectible Pokédex: every Gen-1 species in dex order. Uncaught species
+/// The collectible Pokédex: every supported species in dex order. Uncaught species
 /// show a "?", caught ones show their sprite, name, and level, with a NEW badge
 /// on freshly discovered Pokémon until the player views them.
 struct PokedexView: View {
@@ -22,7 +22,7 @@ struct PokedexView: View {
             Divider().overlay(Color.white.opacity(0.08))
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(Gen1Pokedex.dexRange, id: \.self) { dex in
+                    ForEach(PokemonPokedex.dexRange, id: \.self) { dex in
                         let entry = pokedex.entry(dex)
                         PokedexCell(dex: dex, entry: entry,
                                     loaded: pmdStore.loaded(dex: dex),
@@ -52,7 +52,7 @@ struct PokedexView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Pokédex").font(.title2.bold()).foregroundStyle(.white)
-                Text("\(pokedex.caughtCount) / \(Gen1Pokedex.count) caught")
+                Text("\(pokedex.caughtCount) / \(PokemonPokedex.count) caught")
                     .font(.caption).foregroundStyle(.white.opacity(0.6))
             }
             Spacer()
@@ -129,7 +129,7 @@ private struct PokedexCell: View {
     }
 
     private var label: String {
-        if entry != nil, let name = Gen1Pokedex.name(for: dex) { return name }
+        if entry != nil, let name = PokemonPokedex.name(for: dex) { return name }
         return String(format: "#%03d", dex)
     }
 }

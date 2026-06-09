@@ -95,7 +95,7 @@ final class ProgressStore: ObservableObject {
 
     /// Display name for the active Pokémon (wild or starter).
     var displayName: String {
-        Gen1Pokedex.name(for: displayDex) ?? "Pokémon #\(displayDex)"
+        PokemonPokedex.name(for: displayDex) ?? "Pokémon #\(displayDex)"
     }
 
     var displayLevel: Int { level }
@@ -112,7 +112,7 @@ final class ProgressStore: ObservableObject {
 
     /// The level at which the current form evolves next (nil for final forms).
     var nextEvolutionLevel: Int? {
-        Gen1EvolutionCatalog.evolutions(from: displayDex)
+        PokemonEvolutionCatalog.evolutions(from: displayDex)
             .filter { !PokedexStore.shared.isCaught($0.toDex) }
             .map(effectiveEvolutionLevel)
             .min()
@@ -132,6 +132,7 @@ final class ProgressStore: ObservableObject {
         d.set(displayDex, forKey: Self.displayKey)
         save()
         PMDPetStore.shared.preload(dex)
+        Task { await PMDPetStore.shared.ensureLoaded(dex: dex) }
         PokedexStore.shared.register(dex: dex, level: level(for: dex), isNew: false)
     }
 
@@ -256,7 +257,7 @@ final class ProgressStore: ObservableObject {
     }
 
     private func applyEvolutionIfNeeded(from dex: Int, level: Int) {
-        let unlocked = Gen1EvolutionCatalog.evolutions(from: dex).filter {
+        let unlocked = PokemonEvolutionCatalog.evolutions(from: dex).filter {
             level >= effectiveEvolutionLevel($0) && !PokedexStore.shared.isCaught($0.toDex)
         }
         guard !unlocked.isEmpty else { return }
@@ -272,7 +273,7 @@ final class ProgressStore: ObservableObject {
 
         guard let primary = unlocked.first else { return }
         let nextDex = primary.toDex
-        let name = Gen1Pokedex.name(for: nextDex) ?? "Pokémon #\(nextDex)"
+        let name = PokemonPokedex.name(for: nextDex) ?? "Pokémon #\(nextDex)"
         Task { @MainActor in
             await PMDPetStore.shared.ensureLoaded(dex: nextDex)
             guard PMDPetStore.shared.isAvailable(dex: nextDex) else { return }

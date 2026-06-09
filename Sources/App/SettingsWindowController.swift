@@ -9,7 +9,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
     private var window: NSWindow?
 
-    func show() {
+    func show(initialTab: SetupView.Tab = .pet) {
         SettingsModel.shared.refresh()
 
         // Always rebuild so the window opens fresh (default tab, scrolled to top)
@@ -20,7 +20,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         // Show a Dock icon while Settings is open (requires .regular policy).
         NSApp.setActivationPolicy(.regular)
 
-        let host = NSHostingView(rootView: SetupView(onClose: { [weak self] in
+        let host = NSHostingView(rootView: SetupView(initialTab: initialTab, onClose: { [weak self] in
             self?.window?.close()
         }))
         // A normal window (not NSPanel) so SwiftUI text fields reliably receive

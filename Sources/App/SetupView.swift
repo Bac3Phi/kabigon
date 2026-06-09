@@ -8,8 +8,13 @@ struct SetupView: View {
     @ObservedObject private var pet = PetController.shared
     var onClose: () -> Void
 
-    enum Tab { case general, pet }
-    @State private var tab: Tab = .general
+    enum Tab { case general, reminders, pet }
+    @State private var tab: Tab = .pet
+
+    init(initialTab: Tab = .pet, onClose: @escaping () -> Void) {
+        self.onClose = onClose
+        _tab = State(initialValue: initialTab)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -19,6 +24,8 @@ struct SetupView: View {
                 switch tab {
                 case .general:
                     GeneralTab(model: model, pet: pet)
+                case .reminders:
+                    RemindersTab()
                 case .pet:
                     PetTab(pet: pet)
                 }
@@ -32,8 +39,9 @@ struct SetupView: View {
 
     private var tabBar: some View {
         HStack(spacing: 8) {
-            TabButton(icon: "gearshape.fill", label: "General", selected: tab == .general) { tab = .general }
-            TabButton(icon: "pawprint.fill", label: "Pet", selected: tab == .pet) { tab = .pet }
+            TabButton(icon: "pokeball", label: "Pokemon", selected: tab == .pet) { tab = .pet }
+            TabButton(icon: "calendar.badge.clock", label: "Reminders", selected: tab == .reminders) { tab = .reminders }
+            TabButton(icon: "gearshape.fill", label: "Setting", selected: tab == .general) { tab = .general }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
@@ -49,7 +57,12 @@ private struct TabButton: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 4) {
-                Image(systemName: icon).font(.system(size: 19))
+                if icon == "pokeball" {
+                    PokeballIcon(selected: selected)
+                        .frame(width: 19, height: 19)
+                } else {
+                    Image(systemName: icon).font(.system(size: 19))
+                }
                 Text(label).font(.system(size: 11))
             }
             .frame(width: 78, height: 48)
@@ -61,6 +74,38 @@ private struct TabButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct PokeballIcon: View {
+    let selected: Bool
+
+    var body: some View {
+        GeometryReader { proxy in
+            let size = min(proxy.size.width, proxy.size.height)
+            let lineHeight = max(2, size * 0.12)
+            let buttonSize = size * 0.38
+            let color = selected ? Color.systemAccent : Color.primary
+
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(selected ? 0.95 : 0.82))
+                Circle()
+                    .trim(from: 0, to: 0.5)
+                    .fill(Color.red.opacity(selected ? 0.95 : 0.72))
+                    .rotationEffect(.degrees(180))
+                Rectangle()
+                    .fill(color)
+                    .frame(height: lineHeight)
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: buttonSize, height: buttonSize)
+                    .overlay(Circle().strokeBorder(color, lineWidth: lineHeight))
+                Circle()
+                    .strokeBorder(color, lineWidth: lineHeight)
+            }
+            .frame(width: size, height: size)
+        }
     }
 }
 
@@ -286,6 +331,162 @@ private struct GeneralTab: View {
     }
 }
 
+// MARK: - Reminders tab
+
+private struct RemindersTab: View {
+    @ObservedObject private var reminders = ReminderStore.shared
+    private static let defaultMessage = "Time to drink water. Go pour yourself a glass."
+
+    @State private var messages = defaultMessage
+    @State private var mode: ReminderMode = .interval
+    @State private var minutesText = "30"
+    @State private var scheduledAt = Date().addingTimeInterval(30 * 60)
+
+    private var parsedMinutes: Int {
+        min(1440, max(1, Int(minutesText.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 30))
+    }
+
+    private var canAdd: Bool {
+        messages
+            .components(separatedBy: .newlines)
+            .contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    var body: some View {
+        Form {
+            Section("New Reminder") {
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Messages")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        GrowingTextEditor(text: $messages)
+                            .padding(6)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(Color(white: 0.14)))
+                            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.white.opacity(0.10)))
+                            .frame(minHeight: 92)
+                        Text("One message per line")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("When")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Picker("", selection: $mode) {
+                            Text("Every Period").tag(ReminderMode.interval)
+                            Text("Specific time").tag(ReminderMode.scheduled)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+
+                        if mode == .interval {
+                            HStack(spacing: 8) {
+                                Text("Every")
+                                TextField("", text: $minutesText)
+                                    .frame(width: 72)
+                                    .multilineTextAlignment(.trailing)
+                                    .textFieldStyle(.roundedBorder)
+                                Text("minutes")
+                                Spacer()
+                                Text("1-1440")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else {
+                            DatePicker("Remind at", selection: $scheduledAt, displayedComponents: [.date, .hourAndMinute])
+                        }
+                    }
+
+                    HStack {
+                        Spacer()
+                        Button {
+                            reminders.add(messages: messages,
+                                          mode: mode,
+                                          minutes: parsedMinutes,
+                                          scheduledAt: scheduledAt)
+                            messages = Self.defaultMessage
+                            minutesText = "\(parsedMinutes)"
+                            scheduledAt = Date().addingTimeInterval(TimeInterval(parsedMinutes * 60))
+                        } label: {
+                            Label("Add Reminder", systemImage: "plus.circle.fill")
+                        }
+                        .disabled(!canAdd)
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+
+            Section("Active Reminders") {
+                if reminders.reminders.isEmpty {
+                    Text("No reminders yet.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(reminders.reminders) { reminder in
+                        ReminderRow(reminder: reminder) {
+                            reminders.remove(reminder)
+                        }
+                    }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .onChange(of: minutesText) { newValue in
+            let filtered = newValue.filter(\.isNumber)
+            if filtered != newValue { minutesText = filtered }
+        }
+    }
+}
+
+private struct ReminderRow: View {
+    let reminder: ReminderItem
+    let onRemove: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: reminder.mode == .interval ? "repeat" : "calendar")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.systemAccent)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(reminder.displayMessage)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(2)
+                HStack(spacing: 6) {
+                    Text(reminderSummary)
+                    if reminder.messages.count > 1 {
+                        Text("\(reminder.messages.count) messages")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button(action: onRemove) {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.plain)
+            .help("Remove reminder")
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var reminderSummary: String {
+        switch reminder.mode {
+        case .interval:
+            return "Every \(reminder.minutes) minute\(reminder.minutes == 1 ? "" : "s")"
+        case .scheduled:
+            return reminder.scheduledAt.formatted(date: .abbreviated, time: .shortened)
+        }
+    }
+}
+
 // MARK: - Pet tab
 
 private struct PetTab: View {
@@ -296,7 +497,7 @@ private struct PetTab: View {
 
     private var currentDex: Int { progress.displayDex }
     private var currentName: String {
-        Gen1Pokedex.name(for: currentDex) ?? "Pokémon #\(currentDex)"
+        PokemonPokedex.name(for: currentDex) ?? "Pokémon #\(currentDex)"
     }
 
     var body: some View {
@@ -380,7 +581,7 @@ private struct PetTab: View {
 
 private enum PokemonDescriptions {
     static func text(for dex: Int) -> String {
-        Gen1Pokedex.description(for: dex) ?? "No Pokédex description is available."
+        PokemonPokedex.description(for: dex) ?? "No Pokédex description is available."
     }
 }
 
@@ -437,7 +638,7 @@ private struct CaughtPokemonCard: View {
     }
 
     private var pokemonName: String {
-        Gen1Pokedex.name(for: entry.dex) ?? "#\(entry.dex)"
+        PokemonPokedex.name(for: entry.dex) ?? "#\(entry.dex)"
     }
 
     var body: some View {

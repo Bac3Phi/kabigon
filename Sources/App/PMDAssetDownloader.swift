@@ -4,7 +4,7 @@ import KabigonCore
 /// Downloads a single species' PMD assets from PMDCollab's SpriteCollab at
 /// runtime and writes them into the on-disk cache in the same layout the bundled
 /// assets use. This lets a freshly encountered Pokémon become playable without
-/// shipping all 151 sprite sets inside the app.
+/// shipping every supported sprite set inside the app.
 enum PMDAssetDownloader {
     private static let raw = "https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master"
     private static let wantedAnims = ["Idle", "Walk", "Sleep", "Hurt", "Eat", "Pose", "Charge", "Nod", "Hop"]

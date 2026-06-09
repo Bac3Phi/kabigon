@@ -1,7 +1,7 @@
 import Foundation
 import KabigonCore
 
-/// Spawns wild Pokémon over time: every so often an uncaught Gen-1 species
+/// Spawns wild Pokémon over time: every so often an uncaught supported species
 /// "appears", its assets are downloaded on the spot, and it is added to the
 /// Pokédex flagged NEW (with a notification) so the collection grows as you work.
 @MainActor
@@ -38,16 +38,16 @@ final class EncounterManager: ObservableObject {
         defer { scheduleNext() }
         guard ProgressStore.shared.hasChosenStarter else { return }
         let caught = Set(PokedexStore.shared.data.entries.map(\.dex))
-        let pool = Gen1Pokedex.dexRange.filter { !caught.contains($0) }
+        let pool = PokemonEvolutionCatalog.receivableDexes.filter { !caught.contains($0) }
         guard let dex = pool.randomElement() else { return }   // Pokédex complete
 
         await PMDPetStore.shared.ensureLoaded(dex: dex)
         // If the download failed (offline, missing sprite), skip; we retry later.
         guard PMDPetStore.shared.isAvailable(dex: dex) else { return }
 
-        let level = Int.random(in: 3...18)
+        let level = 1
         PokedexStore.shared.register(dex: dex, level: level, isNew: true)
-        let name = Gen1Pokedex.name(for: dex) ?? "A wild Pokémon"
+        let name = PokemonPokedex.name(for: dex) ?? "A wild Pokémon"
         PetController.shared.reactToEncounter(name: name, level: level)
         NotificationManager.shared.notify(
             title: "A wild \(name) appeared!",

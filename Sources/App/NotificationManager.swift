@@ -14,8 +14,12 @@ final class NotificationManager {
     /// of the macOS permission): users who granted permission can still mute.
     static let enabledKey = "agentpet.notificationsEnabled"
 
-    /// `UNUserNotificationCenter` needs a real bundle id; false under `swift run`.
-    var isAvailable: Bool { Bundle.main.bundleIdentifier != nil }
+    /// `UNUserNotificationCenter` needs a real .app bundle. A SwiftPM debug
+    /// binary may still have a bundle identifier, but macOS has no bundle proxy
+    /// for it and aborts when `UNUserNotificationCenter.current()` is touched.
+    var isAvailable: Bool {
+        Bundle.main.bundleIdentifier != nil && Bundle.main.bundleURL.pathExtension == "app"
+    }
 
     private var available: Bool { isAvailable }
 

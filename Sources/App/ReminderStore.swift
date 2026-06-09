@@ -1,0 +1,164 @@
+import Foundation
+import UserNotifications
+import KabigonCore
+
+enum ReminderMode: String, Codable, CaseIterable, Identifiable {
+    case interval
+    case scheduled
+
+    var id: String { rawValue }
+}
+
+struct ReminderItem: Codable, Identifiable, Equatable {
+    let id: UUID
+    var messages: [String]
+    var mode: ReminderMode
+    var minutes: Int
+    var scheduledAt: Date
+    var createdAt: Date
+
+    var notificationIdentifier: String { "kabigon.reminder.\(id.uuidString)" }
+    var displayMessage: String { messages.first ?? "" }
+
+    init(id: UUID, messages: [String], mode: ReminderMode, minutes: Int, scheduledAt: Date, createdAt: Date) {
+        self.id = id
+        self.messages = messages
+        self.mode = mode
+        self.minutes = minutes
+        self.scheduledAt = scheduledAt
+        self.createdAt = createdAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case message
+        case messages
+        case mode
+        case minutes
+        case scheduledAt
+        case createdAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        if let decodedMessages = try container.decodeIfPresent([String].self, forKey: .messages) {
+            messages = decodedMessages
+        } else if let legacyMessage = try container.decodeIfPresent(String.self, forKey: .message) {
+            messages = [legacyMessage]
+        } else {
+            messages = []
+        }
+        mode = try container.decode(ReminderMode.self, forKey: .mode)
+        minutes = try container.decode(Int.self, forKey: .minutes)
+        scheduledAt = try container.decode(Date.self, forKey: .scheduledAt)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(messages, forKey: .messages)
+        try container.encode(mode, forKey: .mode)
+        try container.encode(minutes, forKey: .minutes)
+        try container.encode(scheduledAt, forKey: .scheduledAt)
+        try container.encode(createdAt, forKey: .createdAt)
+    }
+}
+
+@MainActor
+final class ReminderStore: ObservableObject {
+    static let shared = ReminderStore()
+
+    @Published private(set) var reminders: [ReminderItem] = []
+
+    private let defaultsKey = "kabigon.reminders"
+
+    private init() {
+        load()
+    }
+
+    func start() {
+        guard NotificationManager.shared.isAvailable else { return }
+        DispatchQueue.main.async { [weak self] in
+            self?.scheduleAll()
+        }
+    }
+
+    func add(messages text: String, mode: ReminderMode, minutes: Int, scheduledAt: Date) {
+        let messages = text
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard !messages.isEmpty else { return }
+        let reminder = ReminderItem(
+            id: UUID(),
+            messages: messages,
+            mode: mode,
+            minutes: max(1, minutes),
+            scheduledAt: scheduledAt,
+            createdAt: Date()
+        )
+        reminders.append(reminder)
+        save()
+        schedule(reminder)
+    }
+
+    func remove(_ reminder: ReminderItem) {
+        reminders.removeAll { $0.id == reminder.id }
+        save()
+        guard NotificationManager.shared.isAvailable else { return }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [reminder.notificationIdentifier]
+        )
+    }
+
+    func scheduleAll() {
+        guard NotificationManager.shared.isAvailable else { return }
+        let ids = reminders.map(\.notificationIdentifier)
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
+        reminders.forEach(schedule)
+    }
+
+    private func schedule(_ reminder: ReminderItem) {
+        guard NotificationManager.shared.isAvailable else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Kabigon Reminder"
+        content.body = reminder.messages.randomElement() ?? reminder.displayMessage
+
+        let trigger: UNNotificationTrigger
+        switch reminder.mode {
+        case .interval:
+            trigger = UNTimeIntervalNotificationTrigger(
+                timeInterval: TimeInterval(max(1, reminder.minutes) * 60),
+                repeats: true
+            )
+        case .scheduled:
+            let components = Calendar.current.dateComponents(
+                [.year, .month, .day, .hour, .minute],
+                from: reminder.scheduledAt
+            )
+            trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        }
+
+        let request = UNNotificationRequest(
+            identifier: reminder.notificationIdentifier,
+            content: content,
+            trigger: trigger
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    private func load() {
+        guard let data = UserDefaults.standard.data(forKey: defaultsKey),
+              let decoded = try? EventCoding.decoder.decode([ReminderItem].self, from: data)
+        else { return }
+        reminders = decoded
+    }
+
+    private func save() {
+        guard let data = try? EventCoding.encoder.encode(reminders) else { return }
+        UserDefaults.standard.set(data, forKey: defaultsKey)
+    }
+}

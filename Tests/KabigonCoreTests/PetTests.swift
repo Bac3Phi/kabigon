@@ -79,6 +79,21 @@ final class PokedexDataTests: XCTestCase {
         XCTAssertNil(Gen1Pokedex.name(for: 152))
     }
 
+    func testSupportedPokedexIncludesGen2() {
+        XCTAssertEqual(PokemonPokedex.count, 251)
+        XCTAssertEqual(PokemonPokedex.name(for: 1), "Bulbasaur")
+        XCTAssertEqual(PokemonPokedex.name(for: 152), "Chikorita")
+        XCTAssertEqual(PokemonPokedex.name(for: 251), "Celebi")
+        XCTAssertNil(PokemonPokedex.name(for: 252))
+    }
+
+    func testStarterChoicesIncludeJohtoBasics() {
+        XCTAssertEqual(PMDCatalog.starterDexes, [1, 4, 7, 152, 155, 158])
+        XCTAssertEqual(PMDCatalog.line(root: 152).map(\.dex), [152, 153, 154])
+        XCTAssertEqual(PMDCatalog.line(root: 155).map(\.dex), [155, 156, 157])
+        XCTAssertEqual(PMDCatalog.line(root: 158).map(\.dex), [158, 159, 160])
+    }
+
     func testEveryGen1PokemonHasASpeciesDescription() {
         XCTAssertEqual(Gen1Pokedex.descriptions.count, Gen1Pokedex.count)
         for dex in Gen1Pokedex.dexRange {
@@ -86,6 +101,15 @@ final class PokedexDataTests: XCTestCase {
         }
         XCTAssertNil(Gen1Pokedex.description(for: 0))
         XCTAssertNil(Gen1Pokedex.description(for: 152))
+    }
+
+    func testEverySupportedPokemonHasASpeciesDescription() {
+        XCTAssertEqual(Gen2Pokedex.descriptions.count, Gen2Pokedex.count)
+        for dex in PokemonPokedex.dexRange {
+            XCTAssertFalse(PokemonPokedex.description(for: dex)?.isEmpty ?? true, "Missing description for #\(dex)")
+        }
+        XCTAssertNil(PokemonPokedex.description(for: 0))
+        XCTAssertNil(PokemonPokedex.description(for: 252))
     }
 
     func testPersistenceRoundTrip() throws {
@@ -131,5 +155,28 @@ final class Gen1EvolutionCatalogTests: XCTestCase {
                 && Gen1Pokedex.dexRange.contains($0.toDex)
                 && $0.level > 1
         })
+    }
+
+    func testSupportedEvolutionCatalogIncludesJohtoAndCrossGenRules() {
+        XCTAssertEqual(
+            PokemonEvolutionCatalog.evolutions(from: 152),
+            [EvolutionRule(fromDex: 152, toDex: 153, level: 16, method: .level)]
+        )
+        XCTAssertEqual(PokemonEvolutionCatalog.evolutions(from: 44).map(\.toDex), [45, 182])
+        XCTAssertEqual(PokemonEvolutionCatalog.evolutions(from: 133).map(\.toDex), [134, 135, 136, 196, 197])
+        XCTAssertTrue(PokemonEvolutionCatalog.rules.allSatisfy {
+            PokemonPokedex.dexRange.contains($0.fromDex)
+                && PokemonPokedex.dexRange.contains($0.toDex)
+                && $0.level > 1
+        })
+    }
+
+    func testReceivablePokemonAreOnlyBasicForms() {
+        XCTAssertTrue(PokemonEvolutionCatalog.isReceivable(1))
+        XCTAssertTrue(PokemonEvolutionCatalog.isReceivable(133), "Eevee should remain receivable despite branching evolutions")
+        XCTAssertTrue(PokemonEvolutionCatalog.isReceivable(152))
+        XCTAssertFalse(PokemonEvolutionCatalog.isReceivable(2))
+        XCTAssertFalse(PokemonEvolutionCatalog.isReceivable(25), "Pichu is now the basic form for Pikachu's family")
+        XCTAssertFalse(PokemonEvolutionCatalog.isReceivable(182))
     }
 }
