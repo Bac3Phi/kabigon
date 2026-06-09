@@ -73,13 +73,13 @@ final class ReminderStore: ObservableObject {
     @Published private(set) var reminders: [ReminderItem] = []
 
     private let defaultsKey = "kabigon.reminders"
+    private var timers: [UUID: Timer] = [:]
 
     private init() {
         load()
     }
 
     func start() {
-        guard NotificationManager.shared.isAvailable else { return }
         DispatchQueue.main.async { [weak self] in
             self?.scheduleAll()
         }
@@ -91,12 +91,15 @@ final class ReminderStore: ObservableObject {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         guard !messages.isEmpty else { return }
+        let resolvedScheduledAt = mode == .scheduled && scheduledAt <= Date()
+            ? Date().addingTimeInterval(60)
+            : scheduledAt
         let reminder = ReminderItem(
             id: UUID(),
             messages: messages,
             mode: mode,
             minutes: max(1, minutes),
-            scheduledAt: scheduledAt,
+            scheduledAt: resolvedScheduledAt,
             createdAt: Date()
         )
         reminders.append(reminder)
@@ -105,6 +108,8 @@ final class ReminderStore: ObservableObject {
     }
 
     func remove(_ reminder: ReminderItem) {
+        timers[reminder.id]?.invalidate()
+        timers[reminder.id] = nil
         reminders.removeAll { $0.id == reminder.id }
         save()
         guard NotificationManager.shared.isAvailable else { return }
@@ -114,13 +119,67 @@ final class ReminderStore: ObservableObject {
     }
 
     func scheduleAll() {
-        guard NotificationManager.shared.isAvailable else { return }
-        let ids = reminders.map(\.notificationIdentifier)
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
+        timers.values.forEach { $0.invalidate() }
+        timers.removeAll()
+
+        removePendingNotifications(for: reminders)
         reminders.forEach { schedule($0) }
     }
 
     private func schedule(_ reminder: ReminderItem) {
+        schedulePetReminder(reminder)
+        scheduleNotification(reminder)
+    }
+
+    private func schedulePetReminder(_ reminder: ReminderItem) {
+        let delay: TimeInterval
+        let repeats: Bool
+
+        switch reminder.mode {
+        case .interval:
+            delay = TimeInterval(max(1, reminder.minutes)) * 60
+            repeats = true
+        case .scheduled:
+            delay = reminder.scheduledAt.timeIntervalSinceNow
+            repeats = false
+        }
+
+        guard delay > 0 else { return }
+
+        let timer = Timer(timeInterval: delay, repeats: repeats) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.fire(reminder)
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        timers[reminder.id] = timer
+    }
+
+    private func fire(_ reminder: ReminderItem) {
+        guard reminders.contains(where: { $0.id == reminder.id }) else {
+            timers[reminder.id]?.invalidate()
+            timers[reminder.id] = nil
+            return
+        }
+
+        let message = reminder.messages.randomElement() ?? reminder.displayMessage
+        PetController.shared.reactToReminder(message: message)
+
+        if reminder.mode == .scheduled {
+            timers[reminder.id]?.invalidate()
+            timers[reminder.id] = nil
+            reminders.removeAll { $0.id == reminder.id }
+            save()
+        }
+    }
+
+    private func removePendingNotifications(for reminders: [ReminderItem]) {
+        guard NotificationManager.shared.isAvailable else { return }
+        let ids = reminders.map(\.notificationIdentifier)
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
+    }
+
+    private func scheduleNotification(_ reminder: ReminderItem) {
         guard NotificationManager.shared.isAvailable else { return }
 
         let content = UNMutableNotificationContent()
@@ -130,11 +189,13 @@ final class ReminderStore: ObservableObject {
         let trigger: UNNotificationTrigger
         switch reminder.mode {
         case .interval:
+            let interval = max(61, TimeInterval(max(1, reminder.minutes)) * 60)
             trigger = UNTimeIntervalNotificationTrigger(
-                timeInterval: TimeInterval(max(1, reminder.minutes) * 60),
+                timeInterval: interval,
                 repeats: true
             )
         case .scheduled:
+            guard reminder.scheduledAt > Date() else { return }
             let components = Calendar.current.dateComponents(
                 [.year, .month, .day, .hour, .minute],
                 from: reminder.scheduledAt

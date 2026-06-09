@@ -185,6 +185,18 @@ final class PetController: ObservableObject {
         )
     }
 
+    /// Presents a user reminder through the floating pet, independent of the
+    /// regular ambient chat cadence.
+    func reactToReminder(message: String) {
+        presentReaction(
+            emotion: .inspired,
+            symbol: "calendar.badge.clock",
+            message: message,
+            animationNames: ["Nod", "Pose", "Hop", "Idle"],
+            duration: 5.0
+        )
+    }
+
     private func presentReaction(
         emotion: PetEmotion,
         symbol: String,
