@@ -10,7 +10,7 @@ jobs:
     name: Build & Test
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Select Xcode 16 (Swift 6)
         run: |
           set -euo pipefail

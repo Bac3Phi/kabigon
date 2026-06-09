@@ -19,7 +19,7 @@ jobs:
     env:
       SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Resolve release tag
         run: |
@@ -30,10 +30,16 @@ jobs:
 
       - name: Tag current commit
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f "$RELEASE_TAG" "$GITHUB_SHA"
-          git push --force origin "refs/tags/$RELEASE_TAG"
+          REMOTE_TAG_SHA="$(git ls-remote origin "refs/tags/$RELEASE_TAG" | awk '{print $1}')"
+          if [ "$REMOTE_TAG_SHA" = "$GITHUB_SHA" ]; then
+            echo "$RELEASE_TAG already points at $GITHUB_SHA"
+          else
+            git tag -f "$RELEASE_TAG" "$GITHUB_SHA"
+            git push --force origin "refs/tags/$RELEASE_TAG"
+          fi
 
       - name: Select Xcode 16 (Swift 6)
         run: |
@@ -58,13 +64,17 @@ jobs:
 
       - name: Build app for ZIP
         run: |
-          ./scripts/build-app.sh release || {
+          if ./scripts/build-app.sh release; then
+            echo "Universal release build succeeded."
+          else
             echo "Universal app build failed; retrying native release build for ZIP."
-            KABIGON_UNIVERSAL=0 ./scripts/build-app.sh release
-          } || {
-            echo "Native release build failed; retrying native debug build for ZIP."
-            KABIGON_UNIVERSAL=0 ./scripts/build-app.sh debug
-          }
+            if KABIGON_UNIVERSAL=0 ./scripts/build-app.sh release; then
+              echo "Native release build succeeded."
+            else
+              echo "Native release build failed; retrying native debug build for ZIP."
+              KABIGON_UNIVERSAL=0 ./scripts/build-app.sh debug
+            fi
+          fi
 
       - name: Create ZIP release asset
         run: |
@@ -76,8 +86,12 @@ jobs:
         run: ./scripts/write-appcast.sh "$VERSION" "build/Kabigon-$VERSION.zip"
 
       - name: Build DMG (optional)
-        continue-on-error: true
-        run: ./scripts/ci-dmg.sh
+        run: |
+          if ./scripts/ci-dmg.sh; then
+            echo "DMG build succeeded."
+          else
+            echo "::warning::Optional DMG build failed; continuing with ZIP-only release."
+          fi
         env:
           SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
           AC_API_KEY_P8: ${{ secrets.AC_API_KEY_P8 }}
