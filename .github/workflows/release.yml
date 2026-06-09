@@ -18,9 +18,6 @@ jobs:
   release:
     name: Build & publish release assets
     runs-on: macos-15
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy-pages.outputs.page_url }}
     env:
       SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
     steps:
