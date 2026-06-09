@@ -208,10 +208,15 @@ final class ReminderStore: ObservableObject {
             content: content,
             trigger: trigger
         )
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error {
-                print("Failed to schedule Kabigon reminder: \(error)")
-            }
+        UNUserNotificationCenter.current().add(
+            request,
+            withCompletionHandler: Self.notificationScheduleCompleted
+        )
+    }
+
+    nonisolated private static func notificationScheduleCompleted(_ error: Error?) {
+        if let error {
+            print("Failed to schedule Kabigon reminder: \(error)")
         }
     }
 
