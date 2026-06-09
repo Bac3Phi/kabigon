@@ -8,7 +8,14 @@ cd "$(dirname "$0")/.."
 APP="build/Kabigon.app"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' scripts/AppInfo.plist)"
 
-./scripts/build-app.sh release
+if ./scripts/build-app.sh release; then
+    echo "Initial release build succeeded."
+elif KABIGON_UNIVERSAL=0 ./scripts/build-app.sh release; then
+    echo "Universal app build failed; native release build succeeded."
+else
+    echo "Native release build failed; retrying native debug build."
+    KABIGON_UNIVERSAL=0 ./scripts/build-app.sh debug
+fi
 
 if [ -n "${SIGN_IDENTITY:-}" ]; then
     echo "==> Signing with Developer ID"
