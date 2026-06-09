@@ -31,6 +31,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BINDIR/kabigon" "$APP/Contents/MacOS/kabigon"
 cp "$ROOT/scripts/AppInfo.plist" "$APP/Contents/Info.plist"
 [ -f "$ROOT/scripts/AppIcon.icns" ] && cp "$ROOT/scripts/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+[ -f "$ROOT/Sources/App/Resources/KabigonLogo.png" ] && cp "$ROOT/Sources/App/Resources/KabigonLogo.png" "$APP/Contents/Resources/KabigonLogo.png"
 
 # Install runtime assets in the standard macOS app resource directory.
 ditto "$BINDIR/Kabigon_kabigon.bundle/pmd" "$APP/Contents/Resources/pmd"
