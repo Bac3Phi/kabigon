@@ -91,8 +91,7 @@ enum InstallLocationController {
 
         try fileManager.copyItem(at: appURL, to: destination)
         clearQuarantineAttribute(in: destination)
-        NSWorkspace.shared.openApplication(at: destination,
-                                           configuration: NSWorkspace.OpenConfiguration())
+        NSWorkspace.shared.open(destination)
     }
 
     private static func clearQuarantineAttribute(in bundleURL: URL) {

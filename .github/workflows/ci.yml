@@ -12,10 +12,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode 16 (Swift 6)
-        run: sudo xcode-select -s /Applications/Xcode_16.app
+        run: |
+          set -euo pipefail
+          XCODE_PATH="$(find /Applications -maxdepth 1 -name 'Xcode_16*.app' -print | sort | tail -n 1)"
+          if [ -z "$XCODE_PATH" ]; then
+            echo "No Xcode 16 installation found. Available Xcodes:"
+            ls -d /Applications/Xcode*.app || true
+            exit 1
+          fi
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
       - name: Show Swift version
-        run: swift --version
+        run: |
+          xcodebuild -version
+          swift --version
       - name: Build
-        run: swift build
+        run: swift build -v
       - name: Test
         run: swift test
