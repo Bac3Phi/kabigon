@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"
+     xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"
+     xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>Kabigon Updates</title>
+        <link>https://github.com/Bac3Phi/kabigon/releases</link>
+        <description>Release feed for Kabigon.</description>
+        <language>en</language>
+        <item>
+            <title>Kabigon 1.1.11</title>
+            <sparkle:version>1.1.11</sparkle:version>
+            <sparkle:shortVersionString>1.1.11</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/Bac3Phi/kabigon/releases/download/v1.1.11/Kabigon-1.1.11.zip"
+                       sparkle:edSignature="mcw/uHyVRjzUGlIBldrk2VX5AIfRc53lwx3MNRoxdL/qwGpCfGfDy6X6XCPSb7Ps9xwK2/0HS5DlZ8p4HFElCQ==" length="2605414" type="application/zip" />
+        </item>
+    </channel>
+</rss>
