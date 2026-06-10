@@ -257,6 +257,7 @@ final class ProgressStore: ObservableObject {
     }
 
     private func applyEvolutionIfNeeded(from dex: Int, level: Int) {
+        let isShiny = PokedexStore.shared.entry(dex)?.isShiny ?? false
         let unlocked = PokemonEvolutionCatalog.evolutions(from: dex).filter {
             level >= effectiveEvolutionLevel($0) && !PokedexStore.shared.isCaught($0.toDex)
         }
@@ -267,7 +268,7 @@ final class ProgressStore: ObservableObject {
                 pokemonXP[rule.toDex] ?? 0,
                 config.totalXP(forLevel: level)
             )
-            PokedexStore.shared.register(dex: rule.toDex, level: level, isNew: true)
+            PokedexStore.shared.register(dex: rule.toDex, level: level, isShiny: isShiny, isNew: true)
         }
         save()
 

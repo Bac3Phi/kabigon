@@ -79,6 +79,7 @@ private struct PokedexCell: View {
             ZStack {
                 if entry != nil, let image = idleFrame {
                     PMDThumbnailView(image: image, targetWidth: 44, maxHeight: 52)
+                        .shinyVariant(entry?.isShiny ?? false)
                 } else if entry != nil, isLoading {
                     ProgressView().controlSize(.small)
                 } else if entry != nil, didFail {
@@ -111,13 +112,23 @@ private struct PokedexCell: View {
             .fill(Color.white.opacity(entry == nil ? 0.03 : 0.06)))
         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.08)))
         .overlay(alignment: .topTrailing) {
-            if showNew {
-                Text("NEW")
+            if showNew || entry?.isShiny == true {
+                Text(showNew ? "NEW" : "SHINY")
                     .font(.system(size: 8, weight: .heavy))
                     .padding(.horizontal, 4).padding(.vertical, 1)
-                    .background(Capsule().fill(Color.systemAccent))
-                    .foregroundStyle(.white)
+                    .background(Capsule().fill(showNew ? Color.systemAccent : .yellow))
+                    .foregroundStyle(showNew ? .white : .black)
                     .offset(x: 4, y: -4)
+            }
+        }
+        .overlay(alignment: .topLeading) {
+            if entry?.isShiny == true {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.yellow)
+                    .padding(5)
+                    .offset(x: -2, y: -4)
+                    .help("Shiny")
             }
         }
     }

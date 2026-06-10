@@ -646,6 +646,7 @@ private struct CaughtPokemonCard: View {
             Group {
                 if let sprite {
                     PMDThumbnailView(image: sprite, targetWidth: 34, maxHeight: 40)
+                        .shinyVariant(entry.isShiny)
                 } else if isLoading {
                     ProgressView().controlSize(.small)
                 } else if didFail {
@@ -676,6 +677,15 @@ private struct CaughtPokemonCard: View {
             .strokeBorder(
                 isActive ? Color.systemAccent : Color.secondary.opacity(0.3),
                 lineWidth: isActive ? 2 : 1))
+        .overlay(alignment: .topLeading) {
+            if entry.isShiny {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.yellow)
+                    .padding(5)
+                    .help("Shiny")
+            }
+        }
     }
 }
 

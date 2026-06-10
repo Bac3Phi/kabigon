@@ -156,7 +156,16 @@ final class StatusBarController: NSObject, ObservableObject {
     private func showChatBubble(_ text: String) {
         guard let button = statusItem?.button, let buttonWindow = button.window else { return }
 
-        let host = NSHostingView(rootView: MenuBarChatBubble(text: text))
+        let dex = ProgressStore.shared.displayDex
+        let species = PMDPetStore.shared.loaded(dex: dex)
+        let portrait = species?.portrait(PetController.shared.emotion.portraitName)
+            ?? species?.portrait("Normal")
+        let isShiny = PokedexStore.shared.entry(dex)?.isShiny ?? false
+        let host = NSHostingView(rootView: MenuBarChatBubble(
+            text: text,
+            portrait: portrait,
+            isShiny: isShiny
+        ))
         host.setFrameSize(host.fittingSize)
         let size = host.fittingSize
 

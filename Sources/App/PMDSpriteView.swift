@@ -8,6 +8,7 @@ struct PMDSpriteView: View {
     let species: PMDLoadedSpecies
     let mood: PetMood
     var size: CGFloat = 120
+    var isShiny: Bool = false
     var preferredAnimNames: [String]? = nil
     var workingStyle: WorkingVisualStyle? = nil
     var isReactionAnimation: Bool = false
@@ -46,6 +47,7 @@ struct PMDSpriteView: View {
                 .rotationEffect(.degrees(motion.rotation), anchor: .bottom)
                 .scaleEffect(x: motion.scaleX, y: motion.scaleY, anchor: .bottom)
                 .offset(y: motion.offsetY)
+                .shinyVariant(isShiny)
         } else {
             Image(systemName: "pawprint.fill").font(.system(size: size * 0.4)).foregroundStyle(.secondary)
         }
@@ -141,5 +143,19 @@ struct PMDSpriteView: View {
     private func positiveModulo(_ value: Int, _ modulus: Int) -> Int {
         let remainder = value % modulus
         return remainder >= 0 ? remainder : remainder + modulus
+    }
+}
+
+extension View {
+    @ViewBuilder func shinyVariant(_ isShiny: Bool) -> some View {
+        if isShiny {
+            self
+                .hueRotation(.degrees(135))
+                .saturation(1.35)
+                .brightness(0.08)
+                .shadow(color: .yellow.opacity(0.45), radius: 4)
+        } else {
+            self
+        }
     }
 }

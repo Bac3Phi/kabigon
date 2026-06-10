@@ -62,11 +62,15 @@ final class PokedexDataTests: XCTestCase {
         data.upsert(dex: 25, level: 5, isNew: true)
         XCTAssertTrue(data.isCaught(25))
         XCTAssertEqual(data.newCount, 1)
+        XCTAssertFalse(data.entry(dex: 25)?.isShiny ?? true)
 
         // Re-catching keeps the higher level and does not duplicate the entry.
         data.upsert(dex: 25, level: 3, isNew: false)
         XCTAssertEqual(data.caughtCount, 1)
         XCTAssertEqual(data.entry(dex: 25)?.level, 5)
+
+        data.upsert(dex: 25, level: 4, isShiny: true, isNew: false)
+        XCTAssertTrue(data.entry(dex: 25)?.isShiny ?? false)
 
         data.clearAllNew()
         XCTAssertEqual(data.newCount, 0)
@@ -123,6 +127,13 @@ final class PokedexDataTests: XCTestCase {
         let loaded = PokedexData.load(directory: dir)
         XCTAssertEqual(loaded.entry(dex: 6)?.level, 36)
         XCTAssertTrue(loaded.entry(dex: 6)?.isNew ?? false)
+    }
+
+    func testLegacyPokedexEntryDefaultsToNotShiny() throws {
+        let json = #"{"entries":[{"dex":25,"level":12,"isNew":false,"caughtAt":12345}]}"#
+        let loaded = try EventCoding.decoder.decode(PokedexData.self, from: Data(json.utf8))
+        XCTAssertEqual(loaded.entry(dex: 25)?.level, 12)
+        XCTAssertFalse(loaded.entry(dex: 25)?.isShiny ?? true)
     }
 }
 

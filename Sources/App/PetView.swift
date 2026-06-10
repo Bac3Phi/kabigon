@@ -7,6 +7,7 @@ struct PetView: View {
     var size: CGFloat = 120
     @ObservedObject private var pet = PetController.shared
     @ObservedObject private var progress = ProgressStore.shared
+    @ObservedObject private var pokedex = PokedexStore.shared
     @ObservedObject private var pmdStore = PMDPetStore.shared
     @State private var hearts: [PetHeart] = []
     @State private var pop = false
@@ -50,6 +51,7 @@ struct PetView: View {
                 species: species,
                 mood: pet.mood,
                 size: size,
+                isShiny: pokedex.entry(progress.displayDex)?.isShiny ?? false,
                 preferredAnimNames: pet.petReaction?.animationNames
                     ?? (pet.mood == .working ? pet.workingVisualStyle.animationNames : nil),
                 workingStyle: pet.mood == .working ? pet.workingVisualStyle : nil,
@@ -285,14 +287,16 @@ private struct EvolutionSpark: View {
 struct FloatingPetView: View {
     @ObservedObject private var pet = PetController.shared
     @ObservedObject private var progress = ProgressStore.shared
+    @ObservedObject private var pokedex = PokedexStore.shared
     @ObservedObject private var pmdStore = PMDPetStore.shared
 
     var body: some View {
         VStack(spacing: 10) {
-            if pet.showChat && !pet.chatLine.isEmpty && progress.hasChosenStarter {
+            if !pet.chatLine.isEmpty && progress.hasChosenStarter {
                 ChatBubble(
                     text: pet.chatLine,
                     portrait: portrait,
+                    isShiny: pokedex.entry(progress.displayDex)?.isShiny ?? false,
                     maxWidth: min(270, pet.windowSize.width - 56)
                 )
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
@@ -317,6 +321,7 @@ struct FloatingPetView: View {
 private struct ChatBubble: View {
     let text: String
     var portrait: NSImage? = nil
+    var isShiny: Bool = false
     let maxWidth: CGFloat
     private let font = NSFont.systemFont(ofSize: 12, weight: .medium)
 
@@ -343,6 +348,7 @@ private struct ChatBubble: View {
                     Image(nsImage: portrait)
                         .resizable().interpolation(.none).scaledToFit()
                         .frame(width: 22, height: 22)
+                        .shinyVariant(isShiny)
                 }
                 Text(text)
                     .font(.system(size: 12, weight: .medium))

@@ -331,7 +331,8 @@ final class PetController: ObservableObject {
             symbol: "calendar.badge.clock",
             message: message,
             animationNames: ["Nod", "LookUp", "Pose", "Hop", "Idle"],
-            duration: 5.0
+            duration: 5.0,
+            forceChat: true
         )
     }
 
@@ -340,13 +341,14 @@ final class PetController: ObservableObject {
         symbol: String,
         message: String,
         animationNames: [String],
-        duration: TimeInterval
+        duration: TimeInterval,
+        forceChat: Bool = false
     ) {
         petReactionTimer?.invalidate()
         chatHideTimer?.invalidate()
         self.emotion = emotion
         petReaction = PetReactionEvent(symbol: symbol, animationNames: animationNames)
-        if showChat { chatLine = message }
+        if showChat || forceChat { chatLine = message }
         StatusBarController.shared.refreshTitle()
         petReactionTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { _ in
             Task { @MainActor [weak self] in

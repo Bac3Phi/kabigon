@@ -1,21 +1,40 @@
 import Foundation
 
 /// One collected Pokémon's saved progress: its national-dex number, the highest
-/// level it has reached, whether it is still flagged NEW (freshly added, not yet
-/// viewed), and when it was first caught.
+/// level it has reached, whether it is shiny, whether it is still flagged NEW
+/// (freshly added, not yet viewed), and when it was first caught.
 public struct PokedexEntry: Codable, Sendable, Equatable, Identifiable {
     public var dex: Int
     public var level: Int
+    public var isShiny: Bool
     public var isNew: Bool
     public var caughtAt: Date
 
     public var id: Int { dex }
 
-    public init(dex: Int, level: Int, isNew: Bool, caughtAt: Date) {
+    public init(dex: Int, level: Int, isShiny: Bool = false, isNew: Bool, caughtAt: Date) {
         self.dex = dex
         self.level = level
+        self.isShiny = isShiny
         self.isNew = isNew
         self.caughtAt = caughtAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case dex
+        case level
+        case isShiny
+        case isNew
+        case caughtAt
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        dex = try container.decode(Int.self, forKey: .dex)
+        level = try container.decode(Int.self, forKey: .level)
+        isShiny = try container.decodeIfPresent(Bool.self, forKey: .isShiny) ?? false
+        isNew = try container.decode(Bool.self, forKey: .isNew)
+        caughtAt = try container.decode(Date.self, forKey: .caughtAt)
     }
 }
 
@@ -35,12 +54,19 @@ public struct PokedexData: Codable, Sendable, Equatable {
 
     /// Inserts a new entry or updates an existing one, keeping the highest level
     /// seen and preserving the original caught date.
-    public mutating func upsert(dex: Int, level: Int, isNew: Bool, now: Date = Date()) {
+    public mutating func upsert(
+        dex: Int,
+        level: Int,
+        isShiny: Bool = false,
+        isNew: Bool,
+        now: Date = Date()
+    ) {
         if let i = entries.firstIndex(where: { $0.dex == dex }) {
             entries[i].level = max(entries[i].level, level)
+            if isShiny { entries[i].isShiny = true }
             if isNew { entries[i].isNew = true }
         } else {
-            entries.append(PokedexEntry(dex: dex, level: level, isNew: isNew, caughtAt: now))
+            entries.append(PokedexEntry(dex: dex, level: level, isShiny: isShiny, isNew: isNew, caughtAt: now))
         }
     }
 

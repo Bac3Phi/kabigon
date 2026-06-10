@@ -19,9 +19,9 @@ final class PokedexStore: ObservableObject {
 
     /// Records a caught/seen species, or bumps its level if already owned, and
     /// persists the change.
-    func register(dex: Int, level: Int, isNew: Bool) {
+    func register(dex: Int, level: Int, isShiny: Bool = false, isNew: Bool) {
         guard PokemonPokedex.dexRange.contains(dex) else { return }
-        data.upsert(dex: dex, level: max(level, 1), isNew: isNew)
+        data.upsert(dex: dex, level: max(level, 1), isShiny: isShiny, isNew: isNew)
         data.save()
     }
 

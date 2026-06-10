@@ -10,6 +10,7 @@ final class EncounterManager: ObservableObject {
 
     /// Average seconds between wild encounters; each wait is jittered ±50%.
     private let baseInterval: TimeInterval = 25 * 60
+    private let shinyOdds = 64
     private var timer: Timer?
 
     /// Starts the background encounter timer.
@@ -25,7 +26,7 @@ final class EncounterManager: ObservableObject {
 
     private func scheduleNext(after seconds: TimeInterval? = nil) {
         timer?.invalidate()
-        let wait = seconds ?? (15 * 60) * Double.random(in: 0.5...1.5)
+        let wait = seconds ?? baseInterval * Double.random(in: 0.5...1.5)
         timer = Timer.scheduledTimer(withTimeInterval: wait, repeats: false) { _ in
             Task { @MainActor [weak self] in await self?.spawn() }
         }
@@ -46,11 +47,13 @@ final class EncounterManager: ObservableObject {
         guard PMDPetStore.shared.isAvailable(dex: dex) else { return }
 
         let level = 1
-        PokedexStore.shared.register(dex: dex, level: level, isNew: true)
+        let isShiny = Int.random(in: 1...shinyOdds) == 1
+        PokedexStore.shared.register(dex: dex, level: level, isShiny: isShiny, isNew: true)
         let name = PokemonPokedex.name(for: dex) ?? "A wild Pokémon"
-        PetController.shared.reactToEncounter(name: name, level: level)
+        let displayName = isShiny ? "Shiny \(name)" : name
+        PetController.shared.reactToEncounter(name: displayName, level: level)
         NotificationManager.shared.notify(
-            title: "A wild \(name) appeared!",
+            title: "A wild \(displayName) appeared!",
             body: "Lv \(level) · added to your Pokédex")
     }
 }
