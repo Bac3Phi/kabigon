@@ -40,6 +40,7 @@ struct PetView: View {
             }
             .task(id: progress.displayDex) {
                 guard progress.hasChosenStarter else { return }
+                PokemonCryPlayer.shared.preload(dex: progress.displayDex)
                 await pmdStore.ensureLoaded(dex: progress.displayDex)
             }
     }

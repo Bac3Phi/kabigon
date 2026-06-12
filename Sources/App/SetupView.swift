@@ -221,6 +221,22 @@ private struct GeneralTab: View {
             }
 
             Section("Sounds") {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Pokémon cries")
+                        Text("Play each Pokémon's voice when it speaks.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button {
+                        PokemonCryPlayer.shared.play(dex: ProgressStore.shared.displayDex, force: true)
+                    } label: {
+                        Image(systemName: "play.circle")
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!sound.pokemonCriesEnabled)
+                    ColorSwitch(isOn: $sound.pokemonCriesEnabled)
+                }
                 SoundRow(title: "When an agent finishes",
                          enabled: $sound.doneEnabled,
                          customPath: sound.doneCustomPath,

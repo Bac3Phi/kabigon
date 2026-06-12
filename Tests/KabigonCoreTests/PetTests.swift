@@ -83,24 +83,29 @@ final class PokedexDataTests: XCTestCase {
         XCTAssertNil(Gen1Pokedex.name(for: 152))
     }
 
-    func testSupportedPokedexIncludesGen3() {
-        XCTAssertEqual(PokemonPokedex.count, 386)
+    func testSupportedPokedexIncludesGen4() {
+        XCTAssertEqual(PokemonPokedex.count, 493)
         XCTAssertEqual(PokemonPokedex.name(for: 1), "Bulbasaur")
         XCTAssertEqual(PokemonPokedex.name(for: 152), "Chikorita")
         XCTAssertEqual(PokemonPokedex.name(for: 251), "Celebi")
         XCTAssertEqual(PokemonPokedex.name(for: 252), "Treecko")
         XCTAssertEqual(PokemonPokedex.name(for: 386), "Deoxys")
-        XCTAssertNil(PokemonPokedex.name(for: 387))
+        XCTAssertEqual(PokemonPokedex.name(for: 387), "Turtwig")
+        XCTAssertEqual(PokemonPokedex.name(for: 493), "Arceus")
+        XCTAssertNil(PokemonPokedex.name(for: 494))
     }
 
-    func testStarterChoicesIncludeJohtoAndHoennBasics() {
-        XCTAssertEqual(PMDCatalog.starterDexes, [1, 4, 7, 152, 155, 158, 252, 255, 258])
+    func testStarterChoicesIncludeJohtoHoennAndSinnohBasics() {
+        XCTAssertEqual(PMDCatalog.starterDexes, [1, 4, 7, 152, 155, 158, 252, 255, 258, 387, 390, 393])
         XCTAssertEqual(PMDCatalog.line(root: 152).map(\.dex), [152, 153, 154])
         XCTAssertEqual(PMDCatalog.line(root: 155).map(\.dex), [155, 156, 157])
         XCTAssertEqual(PMDCatalog.line(root: 158).map(\.dex), [158, 159, 160])
         XCTAssertEqual(PMDCatalog.line(root: 252).map(\.dex), [252, 253, 254])
         XCTAssertEqual(PMDCatalog.line(root: 255).map(\.dex), [255, 256, 257])
         XCTAssertEqual(PMDCatalog.line(root: 258).map(\.dex), [258, 259, 260])
+        XCTAssertEqual(PMDCatalog.line(root: 387).map(\.dex), [387, 388, 389])
+        XCTAssertEqual(PMDCatalog.line(root: 390).map(\.dex), [390, 391, 392])
+        XCTAssertEqual(PMDCatalog.line(root: 393).map(\.dex), [393, 394, 395])
     }
 
     func testEveryGen1PokemonHasASpeciesDescription() {
@@ -115,12 +120,13 @@ final class PokedexDataTests: XCTestCase {
     func testEverySupportedPokemonHasASpeciesDescription() {
         XCTAssertEqual(Gen2Pokedex.descriptions.count, Gen2Pokedex.count)
         XCTAssertEqual(Gen3Pokedex.descriptions.count, Gen3Pokedex.count)
+        XCTAssertEqual(Gen4Pokedex.descriptions.count, Gen4Pokedex.count)
         for dex in PokemonPokedex.dexRange {
             XCTAssertFalse(PokemonPokedex.description(for: dex)?.isEmpty ?? true, "Missing description for #\(dex)")
         }
         XCTAssertNil(PokemonPokedex.description(for: 0))
-        XCTAssertFalse(PokemonPokedex.description(for: 386)?.isEmpty ?? true)
-        XCTAssertNil(PokemonPokedex.description(for: 387))
+        XCTAssertFalse(PokemonPokedex.description(for: 493)?.isEmpty ?? true)
+        XCTAssertNil(PokemonPokedex.description(for: 494))
     }
 
     func testPersistenceRoundTrip() throws {
@@ -175,16 +181,18 @@ final class Gen1EvolutionCatalogTests: XCTestCase {
         })
     }
 
-    func testSupportedEvolutionCatalogIncludesJohtoHoennAndCrossGenRules() {
+    func testSupportedEvolutionCatalogIncludesJohtoHoennSinnohAndCrossGenRules() {
         XCTAssertEqual(
             PokemonEvolutionCatalog.evolutions(from: 152),
             [EvolutionRule(fromDex: 152, toDex: 153, level: 16, method: .level)]
         )
         XCTAssertEqual(PokemonEvolutionCatalog.evolutions(from: 44).map(\.toDex), [45, 182])
-        XCTAssertEqual(PokemonEvolutionCatalog.evolutions(from: 133).map(\.toDex), [134, 135, 136, 196, 197])
+        XCTAssertEqual(PokemonEvolutionCatalog.evolutions(from: 133).map(\.toDex), [134, 135, 136, 196, 197, 470, 471])
         XCTAssertEqual(PokemonEvolutionCatalog.evolutions(from: 252).map(\.toDex), [253])
         XCTAssertEqual(PokemonEvolutionCatalog.evolutions(from: 265).map(\.toDex), [266, 268])
         XCTAssertEqual(PokemonEvolutionCatalog.evolutions(from: 366).map(\.toDex), [367, 368])
+        XCTAssertEqual(PokemonEvolutionCatalog.evolutions(from: 387).map(\.toDex), [388])
+        XCTAssertEqual(PokemonEvolutionCatalog.evolutions(from: 281).map(\.toDex), [282, 475])
         XCTAssertTrue(PokemonEvolutionCatalog.rules.allSatisfy {
             PokemonPokedex.dexRange.contains($0.fromDex)
                 && PokemonPokedex.dexRange.contains($0.toDex)
@@ -197,9 +205,12 @@ final class Gen1EvolutionCatalogTests: XCTestCase {
         XCTAssertTrue(PokemonEvolutionCatalog.isReceivable(133), "Eevee should remain receivable despite branching evolutions")
         XCTAssertTrue(PokemonEvolutionCatalog.isReceivable(152))
         XCTAssertTrue(PokemonEvolutionCatalog.isReceivable(252))
+        XCTAssertTrue(PokemonEvolutionCatalog.isReceivable(387))
         XCTAssertFalse(PokemonEvolutionCatalog.isReceivable(2))
         XCTAssertFalse(PokemonEvolutionCatalog.isReceivable(25), "Pichu is now the basic form for Pikachu's family")
         XCTAssertFalse(PokemonEvolutionCatalog.isReceivable(182))
         XCTAssertFalse(PokemonEvolutionCatalog.isReceivable(254))
+        XCTAssertFalse(PokemonEvolutionCatalog.isReceivable(407))
+        XCTAssertFalse(PokemonEvolutionCatalog.isReceivable(461))
     }
 }

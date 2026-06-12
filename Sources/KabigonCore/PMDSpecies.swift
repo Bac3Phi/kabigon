@@ -19,7 +19,7 @@ public struct PMDSpecies: Sendable, Equatable, Identifiable {
 }
 
 /// Starter evolution lines with canonical evolution levels. Kanto starter
-/// assets are bundled; Johto starter assets are downloaded on demand.
+/// assets are bundled; later-generation starter assets are downloaded on demand.
 public enum PMDCatalog {
     public static let species: [PMDSpecies] = [
         PMDSpecies(dex: 1, name: "Bulbasaur",  stage: 0, lineRoot: 1, evolveLevel: 16, nextDex: 2),
@@ -49,10 +49,19 @@ public enum PMDCatalog {
         PMDSpecies(dex: 258, name: "Mudkip",    stage: 0, lineRoot: 258, evolveLevel: 16, nextDex: 259),
         PMDSpecies(dex: 259, name: "Marshtomp", stage: 1, lineRoot: 258, evolveLevel: 36, nextDex: 260),
         PMDSpecies(dex: 260, name: "Swampert",  stage: 2, lineRoot: 258, evolveLevel: nil, nextDex: nil),
+        PMDSpecies(dex: 387, name: "Turtwig",  stage: 0, lineRoot: 387, evolveLevel: 18, nextDex: 388),
+        PMDSpecies(dex: 388, name: "Grotle",   stage: 1, lineRoot: 387, evolveLevel: 32, nextDex: 389),
+        PMDSpecies(dex: 389, name: "Torterra", stage: 2, lineRoot: 387, evolveLevel: nil, nextDex: nil),
+        PMDSpecies(dex: 390, name: "Chimchar", stage: 0, lineRoot: 390, evolveLevel: 14, nextDex: 391),
+        PMDSpecies(dex: 391, name: "Monferno", stage: 1, lineRoot: 390, evolveLevel: 36, nextDex: 392),
+        PMDSpecies(dex: 392, name: "Infernape", stage: 2, lineRoot: 390, evolveLevel: nil, nextDex: nil),
+        PMDSpecies(dex: 393, name: "Piplup",   stage: 0, lineRoot: 393, evolveLevel: 16, nextDex: 394),
+        PMDSpecies(dex: 394, name: "Prinplup", stage: 1, lineRoot: 393, evolveLevel: 36, nextDex: 395),
+        PMDSpecies(dex: 395, name: "Empoleon", stage: 2, lineRoot: 393, evolveLevel: nil, nextDex: nil),
     ]
 
     /// Canonical starter choices (basic forms).
-    public static let starterDexes = [1, 4, 7, 152, 155, 158, 252, 255, 258]
+    public static let starterDexes = [1, 4, 7, 152, 155, 158, 252, 255, 258, 387, 390, 393]
 
     /// Every bundled species in dex order — the full set the player can pick from.
     public static let allDexes = species.map(\.dex)

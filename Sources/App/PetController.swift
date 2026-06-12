@@ -352,7 +352,10 @@ final class PetController: ObservableObject {
         chatHideTimer?.invalidate()
         self.emotion = emotion
         petReaction = PetReactionEvent(symbol: symbol, animationNames: animationNames)
-        if showChat || forceChat { chatLine = message }
+        if showChat || forceChat {
+            chatLine = message
+            PokemonCryPlayer.shared.play(dex: ProgressStore.shared.displayDex)
+        }
         StatusBarController.shared.refreshTitle()
         petReactionTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { _ in
             Task { @MainActor [weak self] in
@@ -391,6 +394,7 @@ final class PetController: ObservableObject {
             return
         }
         chatLine = pool.randomElement() ?? ""
+        PokemonCryPlayer.shared.play(dex: ProgressStore.shared.displayDex)
         StatusBarController.shared.refreshTitle()
         chatHideTimer?.invalidate()
         chatHideTimer = Timer.scheduledTimer(

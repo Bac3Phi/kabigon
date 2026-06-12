@@ -12,6 +12,7 @@ final class SoundSettings: ObservableObject {
 
     @Published var waitingEnabled: Bool { didSet { save() } }
     @Published var doneEnabled: Bool { didSet { save() } }
+    @Published var pokemonCriesEnabled: Bool { didSet { save() } }
     /// "" means use the built-in default; otherwise a custom file path.
     @Published var waitingCustomPath: String { didSet { save() } }
     @Published var doneCustomPath: String { didSet { save() } }
@@ -28,6 +29,7 @@ final class SoundSettings: ObservableObject {
         let d = UserDefaults.standard
         waitingEnabled = (d.object(forKey: "agentpet.sound.waiting.on") as? Bool) ?? true
         doneEnabled = (d.object(forKey: "agentpet.sound.done.on") as? Bool) ?? true
+        pokemonCriesEnabled = (d.object(forKey: "kabigon.sound.pokemonCries.on") as? Bool) ?? true
         waitingCustomPath = d.string(forKey: "agentpet.sound.waiting.path") ?? ""
         doneCustomPath = d.string(forKey: "agentpet.sound.done.path") ?? ""
     }
@@ -88,6 +90,7 @@ final class SoundSettings: ObservableObject {
         let d = UserDefaults.standard
         d.set(waitingEnabled, forKey: "agentpet.sound.waiting.on")
         d.set(doneEnabled, forKey: "agentpet.sound.done.on")
+        d.set(pokemonCriesEnabled, forKey: "kabigon.sound.pokemonCries.on")
         d.set(waitingCustomPath, forKey: "agentpet.sound.waiting.path")
         d.set(doneCustomPath, forKey: "agentpet.sound.done.path")
     }
