@@ -464,29 +464,30 @@ enum PokemonDialogue {
     static func lines(for dex: Int, mood: PetMood) -> [String] {
         let name = PokemonPokedex.name(for: dex) ?? "buddy"
         let species = speciesLines(for: dex)
+        let cries = PokemonTextCry.lines(for: dex)
         switch mood {
         case .idle:
-            return species.idle + [
+            return cries + species.idle + [
                 "\(name) is watching your workspace.",
                 "\(name) looks ready to help.",
             ]
         case .working:
-            return species.working + [
+            return cries + species.working + [
                 "\(name) is focusing with you.",
                 "\(name) is following the thread.",
             ]
         case .waiting:
-            return [
+            return cries + [
                 "\(name) is waiting for your call.",
                 "\(name) tilts its head.",
             ]
         case .done:
-            return species.done + [
+            return cries + species.done + [
                 "\(name) looks proud.",
                 "\(name) gives a satisfied nod.",
             ]
         case .celebrate:
-            return species.celebrate + [
+            return cries + species.celebrate + [
                 "\(name) is celebrating!",
                 "\(name) bounces happily.",
             ]

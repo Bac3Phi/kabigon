@@ -510,6 +510,7 @@ private struct PetTab: View {
     @ObservedObject private var progress = ProgressStore.shared
     @ObservedObject private var pokedex = PokedexStore.shared
     @ObservedObject private var pmdStore = PMDPetStore.shared
+    @ObservedObject private var encounters = EncounterManager.shared
 
     private var currentDex: Int { progress.displayDex }
     private var currentName: String {
@@ -582,6 +583,22 @@ private struct PetTab: View {
                     Text("2 hours").tag(120)
                 }
                 .disabled(!progress.autoSwitchEnabled)
+            }
+
+            Section("Testing") {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Shiny encounter")
+                        Text("Immediately receive a random shiny Pokémon.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Test shiny encounter") {
+                        encounters.triggerShinyEncounter()
+                    }
+                    .disabled(!progress.hasChosenStarter || encounters.isSpawning)
+                }
             }
 
             Section("Size on screen") {

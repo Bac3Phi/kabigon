@@ -95,6 +95,17 @@ final class PokedexDataTests: XCTestCase {
         XCTAssertNil(PokemonPokedex.name(for: 494))
     }
 
+    func testEveryPokemonHasTextCryLines() {
+        for dex in PokemonPokedex.dexRange {
+            let lines = PokemonTextCry.lines(for: dex)
+            XCTAssertFalse(lines.isEmpty, "Missing text cry for #\(dex)")
+            XCTAssertTrue(lines.allSatisfy { !$0.isEmpty })
+        }
+        XCTAssertEqual(PokemonTextCry.lines(for: 25).first, "Pika-pika!")
+        XCTAssertEqual(PokemonTextCry.lines(for: 393).first, "Pip-piplup!")
+        XCTAssertTrue(PokemonTextCry.lines(for: 494).isEmpty)
+    }
+
     func testStarterChoicesIncludeJohtoHoennAndSinnohBasics() {
         XCTAssertEqual(PMDCatalog.starterDexes, [1, 4, 7, 152, 155, 158, 252, 255, 258, 387, 390, 393])
         XCTAssertEqual(PMDCatalog.line(root: 152).map(\.dex), [152, 153, 154])

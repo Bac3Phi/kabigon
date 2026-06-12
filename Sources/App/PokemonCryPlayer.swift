@@ -45,6 +45,12 @@ final class PokemonCryPlayer {
         Task { [weak self] in _ = await self?.download(dex: dex) }
     }
 
+    func stop() {
+        requestID = UUID()
+        sound?.stop()
+        sound = nil
+    }
+
     private func play(url: URL) {
         sound?.stop()
         sound = NSSound(contentsOf: url, byReference: false)

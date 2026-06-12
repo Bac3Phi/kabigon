@@ -12,7 +12,12 @@ final class SoundSettings: ObservableObject {
 
     @Published var waitingEnabled: Bool { didSet { save() } }
     @Published var doneEnabled: Bool { didSet { save() } }
-    @Published var pokemonCriesEnabled: Bool { didSet { save() } }
+    @Published var pokemonCriesEnabled: Bool {
+        didSet {
+            save()
+            if !pokemonCriesEnabled { PokemonCryPlayer.shared.stop() }
+        }
+    }
     /// "" means use the built-in default; otherwise a custom file path.
     @Published var waitingCustomPath: String { didSet { save() } }
     @Published var doneCustomPath: String { didSet { save() } }
