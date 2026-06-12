@@ -4,7 +4,7 @@ import Foundation
 /// still ship as local assets; every other species is downloaded on demand.
 public enum PokemonPokedex {
     /// National-dex range covered by the collectible Pokédex.
-    public static let dexRange = 1...251
+    public static let dexRange = 1...386
     public static var count: Int { names.count }
 
     public static let gen2Names: [String] = [
@@ -27,7 +27,33 @@ public enum PokemonPokedex {
         "Tyranitar", "Lugia", "Ho-Oh", "Celebi",
     ]
 
-    public static let names = Gen1Pokedex.names + gen2Names
+    public static let gen3Names: [String] = [
+        "Treecko", "Grovyle", "Sceptile", "Torchic", "Combusken", "Blaziken",
+        "Mudkip", "Marshtomp", "Swampert", "Poochyena", "Mightyena", "Zigzagoon",
+        "Linoone", "Wurmple", "Silcoon", "Beautifly", "Cascoon", "Dustox",
+        "Lotad", "Lombre", "Ludicolo", "Seedot", "Nuzleaf", "Shiftry",
+        "Taillow", "Swellow", "Wingull", "Pelipper", "Ralts", "Kirlia",
+        "Gardevoir", "Surskit", "Masquerain", "Shroomish", "Breloom", "Slakoth",
+        "Vigoroth", "Slaking", "Nincada", "Ninjask", "Shedinja", "Whismur",
+        "Loudred", "Exploud", "Makuhita", "Hariyama", "Azurill", "Nosepass",
+        "Skitty", "Delcatty", "Sableye", "Mawile", "Aron", "Lairon", "Aggron",
+        "Meditite", "Medicham", "Electrike", "Manectric", "Plusle", "Minun",
+        "Volbeat", "Illumise", "Roselia", "Gulpin", "Swalot", "Carvanha",
+        "Sharpedo", "Wailmer", "Wailord", "Numel", "Camerupt", "Torkoal",
+        "Spoink", "Grumpig", "Spinda", "Trapinch", "Vibrava", "Flygon",
+        "Cacnea", "Cacturne", "Swablu", "Altaria", "Zangoose", "Seviper",
+        "Lunatone", "Solrock", "Barboach", "Whiscash", "Corphish", "Crawdaunt",
+        "Baltoy", "Claydol", "Lileep", "Cradily", "Anorith", "Armaldo",
+        "Feebas", "Milotic", "Castform", "Kecleon", "Shuppet", "Banette",
+        "Duskull", "Dusclops", "Tropius", "Chimecho", "Absol", "Wynaut",
+        "Snorunt", "Glalie", "Spheal", "Sealeo", "Walrein", "Clamperl",
+        "Huntail", "Gorebyss", "Relicanth", "Luvdisc", "Bagon", "Shelgon",
+        "Salamence", "Beldum", "Metang", "Metagross", "Regirock", "Regice",
+        "Registeel", "Latias", "Latios", "Kyogre", "Groudon", "Rayquaza",
+        "Jirachi", "Deoxys",
+    ]
+
+    public static let names = Gen1Pokedex.names + gen2Names + gen3Names
 
     /// Display name for a national-dex number, or nil if out of range.
     public static func name(for dex: Int) -> String? {
@@ -38,7 +64,27 @@ public enum PokemonPokedex {
     /// Species summary for a national-dex number, or nil when unsupported.
     public static func description(for dex: Int) -> String? {
         if let description = Gen1Pokedex.description(for: dex) { return description }
-        return Gen2Pokedex.description(for: dex)
+        if let description = Gen2Pokedex.description(for: dex) { return description }
+        return Gen3Pokedex.description(for: dex)
+    }
+}
+
+public enum Gen3Pokedex {
+    public static let dexRange = 252...386
+    public static var count: Int { names.count }
+    public static let names = PokemonPokedex.gen3Names
+    public static let descriptions = names.map {
+        "\($0) is a Pokémon originally discovered in the Hoenn region."
+    }
+
+    public static func name(for dex: Int) -> String? {
+        guard dexRange.contains(dex) else { return nil }
+        return names[dex - dexRange.lowerBound]
+    }
+
+    public static func description(for dex: Int) -> String? {
+        guard dexRange.contains(dex) else { return nil }
+        return descriptions[dex - dexRange.lowerBound]
     }
 }
 

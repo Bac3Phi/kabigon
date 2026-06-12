@@ -326,6 +326,10 @@ final class PetController: ObservableObject {
     /// Presents a user reminder through the floating pet, independent of the
     /// regular ambient chat cadence.
     func reactToReminder(message: String) {
+        // A reminder is user-authored and time-sensitive: it replaces any
+        // current reaction instead of waiting for active hook activity to end.
+        clearPendingMood()
+        celebrateTimer?.invalidate()
         presentReaction(
             emotion: .inspired,
             symbol: "calendar.badge.clock",

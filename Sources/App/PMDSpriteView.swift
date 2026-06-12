@@ -92,12 +92,14 @@ struct PMDSpriteView: View {
         let variants = clip.variants.filter { !$0.isEmpty }
         guard !variants.isEmpty else { return nil }
         guard variants.count > 1 else { return variants[0] }
-        if mood == .working && !isReactionAnimation {
-            return variants[0]
-        }
 
         let seed = stableHash("\(species.dex)-\(name)")
-        let index = positiveModulo(seed &+ sceneIndex &* 1_103_515_245, variants.count)
+        // PMD's eight directional variants are ordered front, front-side,
+        // side, back-side, back, back-side, side, front-side. Keep the pet's
+        // face visible most of the time and avoid the three back-facing poses.
+        let frontWeighted = [0, 0, 0, 0, 1, 7, 2, 6].filter { $0 < variants.count }
+        let pool = frontWeighted.isEmpty ? Array(variants.indices) : frontWeighted
+        let index = pool[positiveModulo(seed &+ sceneIndex &* 1_103_515_245, pool.count)]
         return variants[index]
     }
 

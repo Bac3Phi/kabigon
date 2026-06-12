@@ -28,6 +28,18 @@ final class ProgressStore: ObservableObject {
     /// XP is tracked per species so every caught Pokémon levels independently.
     @Published private(set) var pokemonXP: [Int: Int]
     @Published private(set) var affection: Int
+    @Published var autoSwitchEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(autoSwitchEnabled, forKey: Self.autoSwitchEnabledKey)
+            scheduleAutoSwitch()
+        }
+    }
+    @Published var autoSwitchMinutes: Int {
+        didSet {
+            UserDefaults.standard.set(max(1, autoSwitchMinutes), forKey: Self.autoSwitchMinutesKey)
+            scheduleAutoSwitch()
+        }
+    }
     @Published var levelUpEvent: PetLevelUpEvent?
     /// Set briefly when an evolution happens so the UI can celebrate it.
     @Published var justEvolvedTo: PokemonEvolutionEvent?
@@ -35,6 +47,7 @@ final class ProgressStore: ObservableObject {
     let config: GameConfig
 
     private var lastPetAt: Date = .distantPast
+    private var autoSwitchTimer: Timer?
 
     private static let chosenKey  = "agentpet.hasChosenStarter"
     private static let starterKey = "agentpet.starterDex"
@@ -42,6 +55,8 @@ final class ProgressStore: ObservableObject {
     private static let xpKey      = "agentpet.totalXP"
     private static let pokemonXPKey = "agentpet.pokemonXP"
     private static let affectionKey = "agentpet.affection"
+    private static let autoSwitchEnabledKey = "kabigon.autoSwitchPokemonEnabled"
+    private static let autoSwitchMinutesKey = "kabigon.autoSwitchPokemonMinutes"
 
     private struct SaveData: Codable {
         var hasChosenStarter: Bool
@@ -58,6 +73,8 @@ final class ProgressStore: ObservableObject {
     init() {
         let d = UserDefaults.standard
         config = GameConfig.load()
+        autoSwitchEnabled = d.bool(forKey: Self.autoSwitchEnabledKey)
+        autoSwitchMinutes = max(1, d.object(forKey: Self.autoSwitchMinutesKey) as? Int ?? 30)
 
         if let saved = Self.loadSaveData() {
             hasChosenStarter = saved.hasChosenStarter
@@ -86,6 +103,10 @@ final class ProgressStore: ObservableObject {
         seedXPFromPokedex()
         save()
         PMDPetStore.shared.preload(displayDex)
+    }
+
+    func startAutoSwitch() {
+        scheduleAutoSwitch()
     }
 
     // MARK: Derived
@@ -145,6 +166,27 @@ final class ProgressStore: ObservableObject {
         UserDefaults.standard.set(dex, forKey: Self.displayKey)
         save()
         PMDPetStore.shared.preload(dex)
+    }
+
+    private func scheduleAutoSwitch() {
+        autoSwitchTimer?.invalidate()
+        autoSwitchTimer = nil
+        guard autoSwitchEnabled else { return }
+
+        let timer = Timer(timeInterval: TimeInterval(max(1, autoSwitchMinutes)) * 60, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.switchToRandomPokemon() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        autoSwitchTimer = timer
+    }
+
+    private func switchToRandomPokemon() {
+        let choices = PokedexStore.shared.data.entries
+            .map(\.dex)
+            .filter { $0 != displayDex }
+        guard let dex = choices.randomElement() else { return }
+        choosePokemon(dex: dex)
+        Task { await PMDPetStore.shared.ensureLoaded(dex: dex) }
     }
 
     /// Awards XP to the active Pokémon and unlocks its next evolution when the

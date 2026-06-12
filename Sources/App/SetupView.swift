@@ -546,6 +546,28 @@ private struct PetTab: View {
                 }
             }
 
+            Section("Automatic switching") {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Change Pokémon automatically")
+                        Text("Randomly picks another caught Pokémon at the selected interval.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    ColorSwitch(isOn: $progress.autoSwitchEnabled)
+                }
+
+                Picker("Change every", selection: $progress.autoSwitchMinutes) {
+                    Text("5 minutes").tag(5)
+                    Text("15 minutes").tag(15)
+                    Text("30 minutes").tag(30)
+                    Text("1 hour").tag(60)
+                    Text("2 hours").tag(120)
+                }
+                .disabled(!progress.autoSwitchEnabled)
+            }
+
             Section("Size on screen") {
                 HStack(spacing: 8) {
                     Slider(value: $pet.petPoint, in: PetController.minPoint...PetController.maxPoint)

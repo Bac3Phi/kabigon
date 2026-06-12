@@ -40,10 +40,19 @@ public enum PMDCatalog {
         PMDSpecies(dex: 158, name: "Totodile",   stage: 0, lineRoot: 158, evolveLevel: 18, nextDex: 159),
         PMDSpecies(dex: 159, name: "Croconaw",   stage: 1, lineRoot: 158, evolveLevel: 30, nextDex: 160),
         PMDSpecies(dex: 160, name: "Feraligatr", stage: 2, lineRoot: 158, evolveLevel: nil, nextDex: nil),
+        PMDSpecies(dex: 252, name: "Treecko",   stage: 0, lineRoot: 252, evolveLevel: 16, nextDex: 253),
+        PMDSpecies(dex: 253, name: "Grovyle",   stage: 1, lineRoot: 252, evolveLevel: 36, nextDex: 254),
+        PMDSpecies(dex: 254, name: "Sceptile",  stage: 2, lineRoot: 252, evolveLevel: nil, nextDex: nil),
+        PMDSpecies(dex: 255, name: "Torchic",   stage: 0, lineRoot: 255, evolveLevel: 16, nextDex: 256),
+        PMDSpecies(dex: 256, name: "Combusken", stage: 1, lineRoot: 255, evolveLevel: 36, nextDex: 257),
+        PMDSpecies(dex: 257, name: "Blaziken",  stage: 2, lineRoot: 255, evolveLevel: nil, nextDex: nil),
+        PMDSpecies(dex: 258, name: "Mudkip",    stage: 0, lineRoot: 258, evolveLevel: 16, nextDex: 259),
+        PMDSpecies(dex: 259, name: "Marshtomp", stage: 1, lineRoot: 258, evolveLevel: 36, nextDex: 260),
+        PMDSpecies(dex: 260, name: "Swampert",  stage: 2, lineRoot: 258, evolveLevel: nil, nextDex: nil),
     ]
 
     /// Canonical starter choices (basic forms).
-    public static let starterDexes = [1, 4, 7, 152, 155, 158]
+    public static let starterDexes = [1, 4, 7, 152, 155, 158, 252, 255, 258]
 
     /// Every bundled species in dex order — the full set the player can pick from.
     public static let allDexes = species.map(\.dex)

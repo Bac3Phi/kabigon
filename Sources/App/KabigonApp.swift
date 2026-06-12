@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Make sure the player's active Pokémon is in the Pokédex, then let wild
         // Pokémon start appearing over time.
         ProgressStore.shared.syncStarterToPokedex()
+        ProgressStore.shared.startAutoSwitch()
         EncounterManager.shared.start()
         SettingsModel.shared.migrateInstalledHooksIfNeeded()
         ReminderStore.shared.start()
